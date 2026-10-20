@@ -8,7 +8,8 @@
    esa lista sea la unica fuente: cada 5 minutos, y cada vez que se edita
    la planilla a mano,
 
-     - comparte la planilla como Editor con las cuentas activas,
+     - comparte la planilla y la carpeta de imagenes de los lotes como
+       Editor con las cuentas activas,
      - le quita el permiso de edicion a las que no estan (o estan en NO),
      - deja la pestana Usuarios editable solo por los administradores.
 
@@ -68,25 +69,52 @@ function sincronizar() {
     // deja la planilla sin nadie.
     if (!activos || !activos.size) return;
 
+    const yo = Session.getEffectiveUser().getEmail().toLowerCase();
     const archivo = DriveApp.getFileById(ss.getId());
-    const owner = archivo.getOwner();
-    const protegidos = new Set([
-      owner ? owner.getEmail().toLowerCase() : '',
-      Session.getEffectiveUser().getEmail().toLowerCase()
-    ]);
+    const protegidos = sincronizarEditores(archivo, activos, yo);
 
-    const editores = archivo.getEditors().map((u) => u.getEmail().toLowerCase());
-    activos.forEach((_rol, email) => {
-      if (!editores.includes(email) && !protegidos.has(email)) archivo.addEditor(email);
-    });
-    editores.forEach((email) => {
-      if (!activos.has(email) && !protegidos.has(email)) archivo.removeEditor(email);
-    });
+    // La carpeta de imagenes de los lotes (la crea la app con la primera foto).
+    const idCarpeta = leerAjuste(ss, 'carpetaImagenes');
+    if (idCarpeta) {
+      try {
+        sincronizarEditores(DriveApp.getFolderById(idCarpeta), activos, yo);
+      } catch (e) {
+        console.warn('No se pudo sincronizar la carpeta de imagenes: ' + e);
+      }
+    }
 
     protegerPestana(hoja, activos, protegidos);
   } finally {
     lock.releaseLock();
   }
+}
+
+/* Deja como editores de `item` (archivo o carpeta de Drive) exactamente a
+   las cuentas activas, sin tocar nunca al dueno ni a quien corre el script.
+   Devuelve ese conjunto de cuentas intocables. */
+function sincronizarEditores(item, activos, yo) {
+  const owner = item.getOwner();
+  const protegidos = new Set([owner ? owner.getEmail().toLowerCase() : '', yo]);
+  const editores = item.getEditors().map((u) => u.getEmail().toLowerCase());
+  activos.forEach((_rol, email) => {
+    if (!editores.includes(email) && !protegidos.has(email)) item.addEditor(email);
+  });
+  editores.forEach((email) => {
+    if (!activos.has(email) && !protegidos.has(email)) item.removeEditor(email);
+  });
+  return protegidos;
+}
+
+function leerAjuste(ss, clave) {
+  const hoja = ss.getSheetByName('Ajustes');
+  if (!hoja) return '';
+  const datos = hoja.getDataRange().getValues();
+  const cab = (datos.shift() || []).map((h) => String(h).trim().toLowerCase());
+  const iClave = cab.indexOf('clave');
+  const iValor = cab.indexOf('valor');
+  if (iClave < 0 || iValor < 0) return '';
+  const fila = datos.find((f) => String(f[iClave]).trim() === clave);
+  return fila ? String(fila[iValor]).trim() : '';
 }
 
 /* Solo los administradores (y el dueno) pueden editar la pestana Usuarios:

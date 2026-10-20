@@ -3,7 +3,8 @@
 Aplicación web para armar hojas A4 de etiquetas y mandarlas a imprimir. Es un sitio
 estático (HTML + JavaScript, sin servidor ni compilación) pensado para publicarse en
 GitHub Pages. El catálogo de códigos, las plantillas y el registro de lotes se guardan en
-una planilla de Google Sheets compartida por el equipo, con login de Google.
+una única planilla de Google Sheets que usa todo el equipo, y las imágenes de los lotes en
+una carpeta de Google Drive, con login de Google.
 
 ## Puesta en marcha
 
@@ -32,13 +33,16 @@ Se hace una sola vez. Hacen falta una cuenta de GitHub y una de Google.
 En [console.cloud.google.com](https://console.cloud.google.com):
 
 1. Crear un proyecto nuevo (por ejemplo "EtiquetApp").
-2. **APIs y servicios → Biblioteca**: buscar **Google Sheets API** y habilitarla.
+2. **APIs y servicios → Biblioteca**: buscar y habilitar **Google Sheets API** y
+   **Google Drive API**.
 3. **Google Auth Platform** (pantalla de consentimiento OAuth):
    - *Información de la marca*: nombre de la app y mail de contacto.
    - *Público*: **Interno** si el equipo usa Google Workspace (entra cualquier cuenta de la
      organización). Si son cuentas @gmail, **Externo**, dejarlo en estado *Prueba* y
      agregar en *Usuarios de prueba* el mail de cada persona del equipo (hasta 100).
-   - *Acceso a los datos*: agregar el permiso `.../auth/spreadsheets`.
+   - *Acceso a los datos*: agregar los permisos `.../auth/spreadsheets` y `.../auth/drive`.
+     El de Drive es el completo (no `drive.file`) porque con `drive.file` cada persona solo
+     ve las imágenes que subió ella misma. La app solo usa la carpeta de imágenes.
 4. **Clientes → Crear cliente**: tipo **Aplicación web**. En *Orígenes autorizados de
    JavaScript* agregar `https://USUARIO.github.io` (sin la ruta del repositorio) y, para
    probar en la PC, `http://localhost:8080`. No hace falta ninguna URI de redireccionamiento.
@@ -54,11 +58,17 @@ solo hace falta para abrir la app a cualquier cuenta.
 1. Entrar al sitio y tocar **Iniciar sesión con Google**.
 2. En la ventana *Planilla de Google*, **Crear planilla nueva**. La app arma las pestañas
    y anota a quien la creó como **administrador** en la pestaña `Usuarios`.
-3. Instalar el script de permisos (ver abajo). Desde ese momento, para dar acceso a alguien
+3. Copiar el ID de la planilla (aparece en esa misma ventana) en `config.js`, en
+   `spreadsheetId`, y subir el cambio a GitHub. **Todo el equipo usa esa planilla**: con el
+   ID cargado, la app entra directo a ella y ya no ofrece elegir ni crear otra.
+4. Instalar el script de permisos (ver abajo). Desde ese momento, para dar acceso a alguien
    alcanza con agregar su mail en la pestaña `Usuarios`: no hace falta compartir la planilla
-   a mano.
-4. Opcional: pegar el ID de la planilla en `config.js` (`spreadsheetId`) para que el resto
-   del equipo entre directo, sin tener que pegar la URL la primera vez.
+   ni la carpeta de imágenes a mano.
+
+La carpeta de imágenes (*EtiquetApp - imagenes de lotes*) la crea la app sola con la
+primera foto, en la misma carpeta de Drive donde está la planilla, y anota su ID en la
+pestaña `Ajustes` para que todos suban a la misma. Se puede mover a otra carpeta desde
+Drive sin romper nada.
 
 ### 4. Quién puede entrar: la pestaña Usuarios
 
@@ -81,7 +91,8 @@ pestaña `Usuarios` mande también sobre eso, hay que instalar el script
 [`apps-script/usuarios.gs`](apps-script/usuarios.gs). Cada 5 minutos, y en cada cambio
 hecho a mano en la planilla:
 
-- comparte la planilla como **Editor** con las cuentas activas y se la quita a las demás;
+- comparte la planilla y la carpeta de imágenes como **Editor** con las cuentas activas y se
+  las quita a las demás;
 - deja la pestaña `Usuarios` editable solo por los administradores.
 
 Instalación (la hace el dueño de la planilla, una sola vez):
@@ -129,17 +140,21 @@ la app la agrega sola al conectarse.
 |---|---|---|
 | `Catalogo` | código de barras | codigo, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
 | `Plantillas` | plantilla | id, nombre, producto, cantidad, unidad, codigo, ingredientes, infoExtra, nutri, diseno, actualizado, por |
-| `Lotes` | lote | lote, codigo, producto, vencimiento, imagen, archivo, actualizado, por |
-| `Imagenes` | imagen de lote | id, tipo, datos (columnas C a Z) |
+| `Lotes` | lote | lote, codigo, producto, vencimiento, imagen, archivo, enlace, actualizado, por |
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
+| `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
 - `nutri` es la tabla nutricional en formato JSON. Conviene editarla desde la app.
 - `actualizado` y `por` se completan solos con la fecha y el mail de quien guardó.
 - Las plantillas se identifican por `id`: una fila agregada a mano sin `id` se ignora.
-- Las imágenes se guardan dentro de la planilla, como texto base64 repartido en celdas
-  (una celda admite hasta 50.000 caracteres). Así quien tiene acceso a la planilla tiene
-  acceso a las imágenes, sin pedir permisos sobre Google Drive. La app las achica a JPEG de
-  hasta 1600 px antes de subirlas.
+- En `Lotes`, `imagen` es el ID del archivo en Drive, `archivo` el nombre original de la foto
+  y `enlace` el link para abrirla desde la planilla.
+- En `Ajustes`, `carpetaImagenes` es el ID de la carpeta de Drive de las imágenes.
+
+Las fotos se suben a Drive tal cual (hasta 20 MB), sin recomprimirlas, con el nombre
+`Lote <lote> - <archivo original>`. Al cambiar o quitar la imagen de un lote, la anterior va a
+la papelera de Drive (se puede recuperar durante 30 días). Si la subió otra persona, Drive no
+deja mandarla a la papelera: queda en la carpeta, desvinculada del lote.
 
 ## Qué hace
 
@@ -225,8 +240,9 @@ confirmación antes de reemplazarlo.
 
 **Registro de lotes** (requiere conexión con Google). Asocia el lote de la etiqueta
 seleccionada con su código, producto y vencimiento, y opcionalmente con una imagen de
-registro (por ejemplo, una foto de la tirada). **La imagen no se imprime**: se ve en el panel
-y, con un clic, en tamaño real. Cambiar la imagen reemplaza la anterior. El campo *Lote*
+registro (por ejemplo, una foto de la tirada), que se guarda en la carpeta del equipo en
+Google Drive. **La imagen no se imprime**: se ve en el panel y, con un clic, se abre en Drive.
+Cambiar la imagen reemplaza la anterior. El campo *Lote*
 sugiere los lotes ya registrados.
 
 **Datos compartidos.** Con varias personas trabajando a la vez, cada guardado relee la
@@ -305,7 +321,7 @@ index.html                   interfaz
 styles.css                   UI + hoja A4 en mm + estilos de impresión
 app.js                       estado, render de etiquetas, códigos de barras
 config.js                    ID de cliente de Google y planilla por defecto
-google.js                    login de Google y acceso a la Sheets API
+google.js                    login de Google y acceso a las APIs de Sheets y Drive
 cloud.js                     catálogo, plantillas y lotes contra la planilla
 browser-api.js               archivos, impresión y configuración local del navegador
 apps-script/usuarios.gs      script de la planilla: permisos según la pestaña Usuarios

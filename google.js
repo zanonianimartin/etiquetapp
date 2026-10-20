@@ -1,13 +1,21 @@
 /* ============================================================
-   EtiquetApp — login con Google y acceso a Google Sheets
+   EtiquetApp — login con Google, Google Sheets y Google Drive
    ============================================================
 
    Todo corre en el navegador: no hay servidor propio. El login usa Google
-   Identity Services (token de acceso de 1 hora, sin refresh token) y los
-   datos se leen y escriben directo contra la Sheets API v4. */
+   Identity Services (token de acceso de 1 hora, sin refresh token); los
+   datos se leen y escriben directo contra la Sheets API v4 y las imagenes
+   de los lotes van como archivos a una carpeta de Drive (Drive API v3). */
 
-const G_SCOPES = 'https://www.googleapis.com/auth/spreadsheets email';
+/* Drive completo, y no `drive.file`: con `drive.file` cada usuario solo ve
+   los archivos que subio el mismo, y las imagenes de los lotes las tiene
+   que ver todo el equipo. La app solo usa la carpeta de imagenes. */
+const SCOPE_SHEETS = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive';
+const G_SCOPES = `${SCOPE_SHEETS} ${SCOPE_DRIVE} email`;
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
+const DRIVE_API = 'https://www.googleapis.com/drive/v3/files';
+const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 const G_SESSION_KEY = 'etiquetapp-google';
 
 /* Pestanas de la planilla y sus columnas, en el orden en que se crean.
@@ -18,17 +26,18 @@ const TABS = {
                'infoExtra', 'nutri', 'actualizado', 'por'],
   Plantillas: ['id', 'nombre', 'producto', 'cantidad', 'unidad', 'codigo', 'ingredientes',
                'infoExtra', 'nutri', 'diseno', 'actualizado', 'por'],
-  Lotes:      ['lote', 'codigo', 'producto', 'vencimiento', 'imagen', 'archivo',
+  /* `imagen` es el id del archivo en Drive y `enlace` su link para abrirlo
+     desde la planilla. */
+  Lotes:      ['lote', 'codigo', 'producto', 'vencimiento', 'imagen', 'archivo', 'enlace',
                'actualizado', 'por'],
-  /* Las imagenes van partidas en trozos de texto (base64) desde la columna C:
-     una celda admite hasta 50.000 caracteres. Asi el acceso a las imagenes es
-     el mismo que a la planilla, sin pedir permisos sobre Google Drive. */
-  Imagenes:   ['id', 'tipo', 'datos'],
   /* Cuentas habilitadas para usar la app. `rol`: admin o usuario.
      `activo`: vacio o SI habilita; NO deshabilita sin borrar la fila.
      El script de apps-script/usuarios.gs sincroniza esta lista con los
-     permisos reales de la planilla. */
-  Usuarios:   ['email', 'nombre', 'rol', 'activo', 'actualizado', 'por']
+     permisos reales de la planilla y de la carpeta de imagenes. */
+  Usuarios:   ['email', 'nombre', 'rol', 'activo', 'actualizado', 'por'],
+  /* Valores compartidos por todo el equipo. Hoy: `carpetaImagenes`, el id
+     de la carpeta de Drive donde van las imagenes de los lotes. */
+  Ajustes:    ['clave', 'valor', 'actualizado', 'por']
 };
 
 /* Columnas con formato de texto: sin esto, un codigo cargado a mano en la
@@ -38,9 +47,6 @@ const TEXT_COLS = {
   Plantillas: ['codigo'],
   Lotes: ['lote', 'codigo', 'vencimiento']
 };
-
-const IMG_CHUNK = 45000;            // margen bajo el limite de 50.000 por celda
-const IMG_MAX_CHUNKS = 24;          // columnas C a Z: no hace falta ampliar la grilla
 
 const G = {
   token: null,
@@ -88,8 +94,9 @@ function gRequestToken(prompt) {
       login_hint: G.email || undefined,
       callback: (resp) => {
         if (resp.error) return reject(new Error('Google rechazo el acceso: ' + resp.error));
-        if (!oauth.hasGrantedAllScopes(resp, 'https://www.googleapis.com/auth/spreadsheets')) {
-          return reject(new Error('Hace falta permitir el acceso a Google Sheets para usar la planilla.'));
+        // Google deja destildar cada permiso por separado en la pantalla de consentimiento.
+        if (!oauth.hasGrantedAllScopes(resp, SCOPE_SHEETS, SCOPE_DRIVE)) {
+          return reject(new Error('Hace falta permitir el acceso a Google Sheets y a Google Drive: la planilla y las imagenes de los lotes viven ahi.'));
         }
         G.token = resp.access_token;
         G.exp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
@@ -135,22 +142,24 @@ async function gEnsureToken() {
 
 /* ---------------- HTTP ---------------- */
 
-function gErrorText(status, body) {
+/* `what` nombra el recurso en el mensaje ("la planilla", "la imagen"…). */
+function gErrorText(status, body, what) {
   const msg = body && body.error && body.error.message;
-  if (status === 403) return 'Tu cuenta no tiene permiso de edicion sobre la planilla.';
-  if (status === 404) return 'No se encontro la planilla. Revisá la URL o el ID.';
+  if (status === 403) return `Tu cuenta no tiene permiso de edicion sobre ${what}.`;
+  if (status === 404) return `No se encontro ${what}` + (what === 'la planilla' ? '. Revisá la URL o el ID.' : ', o tu cuenta no tiene acceso.');
   if (status === 429) return 'Google limito las consultas por un momento. Probá de nuevo en un minuto.';
   return `Error de Google (${status})` + (msg ? ': ' + msg : '');
 }
 
+/* opts: method, body (texto JSON, o FormData para subir archivos),
+   blob (devuelve el contenido como Blob) y what (para los mensajes). */
 async function gFetch(url, opts = {}, retry = true) {
   await gEnsureToken();
+  const headers = { Authorization: 'Bearer ' + G.token };
+  if (typeof opts.body === 'string') headers['Content-Type'] = 'application/json';
   let res;
   try {
-    res = await fetch(url, {
-      ...opts,
-      headers: { Authorization: 'Bearer ' + G.token, 'Content-Type': 'application/json' }
-    });
+    res = await fetch(url, { method: opts.method || 'GET', body: opts.body, headers });
   } catch {
     throw new Error('Sin conexion con Google. Revisá internet y probá de nuevo.');
   }
@@ -158,9 +167,12 @@ async function gFetch(url, opts = {}, retry = true) {
     G.exp = 0;
     return gFetch(url, opts, false);
   }
-  const body = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(gErrorText(res.status, body));
-  return body;
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(gErrorText(res.status, body, opts.what || 'la planilla'));
+  }
+  if (opts.blob) return res.blob();
+  return res.json().catch(() => null);     // 204 y respuestas vacias
 }
 
 const gRange = (tab, a1) => encodeURIComponent(`'${tab}'!${a1}`);
@@ -332,39 +344,74 @@ async function gDelete(tab, key, value) {
   return !!r;
 }
 
-/* ---------------- Imagenes ---------------- */
+/* ---------------- Drive: imagenes de los lotes ---------------- */
 
-/* Solo se lee la columna A para ubicar la fila: leer la pestana completa
-   bajaria todas las imagenes de todos los lotes. */
-async function gImageRow(id) {
-  const res = await gFetch(gValuesUrl('A:A', 'Imagenes'));
-  const col = res.values || [];
-  const i = col.findIndex((v) => String((v || [])[0] || '').trim() === id);
-  return i > 0 ? i + 1 : 0;
+/* supportsAllDrives: la planilla y la carpeta pueden estar en una unidad
+   compartida de Google Workspace, no solo en "Mi unidad". */
+const ALL_DRIVES = 'supportsAllDrives=true';
+
+/* Carpeta donde esta la planilla, para crear la de imagenes al lado. Si no
+   se puede leer (la planilla es de otro y no hay acceso a su carpeta) se
+   devuelve null y la carpeta va a la raiz de "Mi unidad". */
+async function gParentOf(fileId) {
+  try {
+    const f = await gFetch(`${DRIVE_API}/${fileId}?fields=parents&${ALL_DRIVES}`, { what: 'la planilla en Drive' });
+    return ((f && f.parents) || [])[0] || null;
+  } catch {
+    return null;
+  }
 }
 
-async function gSaveImage(id, dataUrl) {
-  const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl);
-  if (!m) throw new Error('Imagen invalida.');
-  const chunks = [];
-  for (let i = 0; i < m[2].length; i += IMG_CHUNK) chunks.push(m[2].slice(i, i + IMG_CHUNK));
-  if (chunks.length > IMG_MAX_CHUNKS) throw new Error('La imagen es demasiado grande para la planilla.');
-
-  await gFetch(gValuesUrl('A1', 'Imagenes', ':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS'), {
-    method: 'POST', body: JSON.stringify({ values: [[id, m[1], ...chunks]] })
+async function gCreateFolder(name, parent) {
+  return gFetch(`${DRIVE_API}?fields=id,webViewLink&${ALL_DRIVES}`, {
+    method: 'POST',
+    body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', ...(parent ? { parents: [parent] } : {}) }),
+    what: 'Google Drive'
   });
 }
 
-async function gLoadImage(id) {
-  const row = await gImageRow(id);
-  if (!row) return null;
-  const res = await gFetch(gValuesUrl(`A${row}:Z${row}`, 'Imagenes'));
-  const v = (res.values || [])[0] || [];
-  if (!v[1] || v.length < 3) return null;
-  return `data:${v[1]};base64,${v.slice(2).join('')}`;
+/* Comparte como Editor sin mandar el mail de aviso de Google. */
+async function gShare(fileId, email) {
+  return gFetch(`${DRIVE_API}/${fileId}/permissions?sendNotificationEmail=false&${ALL_DRIVES}`, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'user', role: 'writer', emailAddress: email }),
+    what: 'la carpeta de imagenes'
+  });
 }
 
-async function gDeleteImage(id) {
-  const row = await gImageRow(id);
-  if (row) await gDeleteRow('Imagenes', row);
+/* Revisa que la carpeta exista y que la cuenta llegue a ella. */
+async function gFolderOk(folderId) {
+  try {
+    const f = await gFetch(`${DRIVE_API}/${folderId}?fields=id,trashed&${ALL_DRIVES}`, { what: 'la carpeta de imagenes' });
+    return !!f && !f.trashed;
+  } catch {
+    return false;
+  }
+}
+
+async function gUploadImage(file, name, folderId) {
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({ name, parents: [folderId] })], { type: 'application/json' }));
+  form.append('file', file);
+  return gFetch(`${DRIVE_UPLOAD}?uploadType=multipart&fields=id,name,webViewLink&${ALL_DRIVES}`, {
+    method: 'POST', body: form, what: 'la carpeta de imagenes'
+  });
+}
+
+function gImageBlob(fileId) {
+  return gFetch(`${DRIVE_API}/${fileId}?alt=media&${ALL_DRIVES}`, { blob: true, what: 'la imagen' });
+}
+
+/* Manda la imagen a la papelera (se puede recuperar desde Drive durante 30
+   dias). En "Mi unidad" solo el dueno del archivo puede hacerlo: si la subio
+   otra persona, falla y la imagen queda en la carpeta, solo desvinculada. */
+async function gTrash(fileId) {
+  try {
+    await gFetch(`${DRIVE_API}/${fileId}?${ALL_DRIVES}`, {
+      method: 'PATCH', body: JSON.stringify({ trashed: true }), what: 'la imagen'
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }

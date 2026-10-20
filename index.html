@@ -303,7 +303,8 @@
         </div>
         <button id="btnLoteImgDel" class="btn ghost small wide danger" hidden>Quitar imagen</button>
         <p class="hint">Guarda el lote de la etiqueta seleccionada con su codigo, producto y
-          vencimiento, y una imagen de registro. <b>La imagen no se imprime.</b></p>
+          vencimiento, y una imagen de registro que va a la carpeta del equipo en Google
+          Drive. <b>La imagen no se imprime.</b></p>
       </div>
     </section>
 
@@ -363,18 +364,22 @@ Miel pura | 1 | kg | L-002 | 06/2028 | 7790000000010 | 4"></textarea>
     <h4>Planilla de Google</h4>
     <p class="hint" id="gWho">—</p>
     <p class="hint" id="gCurrent">—</p>
-    <label class="field">
-      <span>Usar otra planilla (URL o ID)</span>
-      <input type="text" id="gSheetInput" placeholder="https://docs.google.com/spreadsheets/d/…">
-    </label>
-    <em class="err" id="gErr"></em>
-    <div class="row2">
-      <button id="gUse" class="btn small">Usar esta planilla</button>
-      <button id="gCreate" class="btn ghost small">Crear planilla nueva</button>
+    <p class="hint" id="gFixed"></p>
+    <!-- Solo en la puesta en marcha: con spreadsheetId en config.js la
+         planilla queda fija para todo el equipo y esto se oculta. -->
+    <div id="gChange">
+      <label class="field">
+        <span>Usar otra planilla (URL o ID)</span>
+        <input type="text" id="gSheetInput" placeholder="https://docs.google.com/spreadsheets/d/…">
+      </label>
+      <em class="err" id="gErr"></em>
+      <div class="row2">
+        <button id="gUse" class="btn small">Usar esta planilla</button>
+        <button id="gCreate" class="btn ghost small">Crear planilla nueva</button>
+      </div>
+      <p class="hint">Todo el equipo tiene que usar la misma planilla: una vez creada, su ID
+        va en <b>config.js</b>. Si le faltan pestanas o columnas, la app las agrega sola.</p>
     </div>
-    <p class="hint">Todo el equipo usa la misma planilla: quien la crea la comparte desde
-      Google Sheets (<b>Compartir</b>) con permiso de <b>Editor</b>. Si le faltan pestanas o
-      columnas, la app las agrega sola.</p>
     <div class="modal-actions">
       <button id="gLogout" class="btn ghost small danger">Desconectar</button>
       <span style="flex:1"></span>

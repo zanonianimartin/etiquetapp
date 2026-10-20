@@ -8,15 +8,19 @@
    recien cuando ya esta todo definido. */
 
 const SHEET_ID_KEY = 'etiquetapp-sheet';
+const IMG_MAX = 20 * 1024 * 1024;    // fotos de celular de sobra; evita subir videos por error
+const FOLDER_NAME = 'EtiquetApp - imagenes de lotes';
 
 const cloud = {
   catalog: [],        // { codigo, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri }
-  lotes: [],          // { lote, codigo, producto, vencimiento, imagen, archivo, actualizado, por }
+  lotes: [],          // { lote, codigo, producto, vencimiento, imagen, archivo, enlace, actualizado, por }
+  usuarios: [],       // filas activas de la pestana Usuarios
+  ajustes: {},        // pestana Ajustes: clave -> valor
   loaded: 0,          // momento de la ultima carga completa
   rol: '',            // rol de la cuenta conectada en la pestana Usuarios
   busy: false
 };
-const imgCache = new Map();          // id de imagen -> data URL
+const imgCache = new Map();          // id del archivo en Drive -> object URL
 
 /* Hay token (aunque este por vencer: gFetch lo renueva) y planilla abierta. */
 const cloudReady = () => !!(G.token && G.sheet);
@@ -27,12 +31,18 @@ function requireCloud() {
   return false;
 }
 
+/* Con `spreadsheetId` en config.js todo el equipo usa esa planilla y la app
+   no ofrece cambiarla. Sin el, se recuerda en el navegador la que se eligio
+   o creo (modo de puesta en marcha). */
+const sheetFixed = () => !!gConfig().spreadsheetId;
+
 function savedSheetId() {
-  try { return localStorage.getItem(SHEET_ID_KEY) || gConfig().spreadsheetId || ''; }
-  catch { return gConfig().spreadsheetId || ''; }
+  if (sheetFixed()) return gConfig().spreadsheetId;
+  try { return localStorage.getItem(SHEET_ID_KEY) || ''; } catch { return ''; }
 }
 
 function rememberSheetId(id) {
+  if (sheetFixed()) return;
   try { localStorage.setItem(SHEET_ID_KEY, id); } catch { /* se vuelve a pedir al recargar */ }
 }
 
@@ -86,7 +96,7 @@ const catToRow = (c) => ({ ...c, nutri: JSON.stringify(cloneNutri(c.nutri)) });
 const loteFromRow = (r) => ({
   lote: String(r.lote).trim(), codigo: r.codigo || '', producto: r.producto || '',
   vencimiento: r.vencimiento || '', imagen: r.imagen || '', archivo: r.archivo || '',
-  actualizado: r.actualizado || '', por: r.por || ''
+  enlace: r.enlace || '', actualizado: r.actualizado || '', por: r.por || ''
 });
 
 /* ---------------- Acceso ---------------- */
@@ -130,10 +140,13 @@ function handleDenied(err) {
 
 async function cloudLoadAll() {
   await gEnsureToken();               // una sola renovacion para todas las lecturas
-  const [usu, cat, tpl, lot] = await Promise.all([
-    gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Plantillas'), gReadTab('Lotes')
+  const [usu, cat, tpl, lot, aju] = await Promise.all([
+    gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Plantillas'), gReadTab('Lotes'),
+    gReadTab('Ajustes')
   ]);
   cloud.rol = await checkAccess(usu.rows);
+  cloud.usuarios = usu.rows.filter((r) => String(r.email || '').trim() && esActivo(r.activo));
+  cloud.ajustes = Object.fromEntries(aju.rows.map((r) => [String(r.clave).trim(), String(r.valor || '').trim()]));
   cloud.catalog = cat.rows.filter((r) => String(r.codigo || '').trim()).map(catFromRow);
   // Las plantillas se identifican por id: una fila cargada a mano sin id se ignora.
   state.templates = tpl.rows.filter((r) => String(r.id || '').trim()).map(tplFromRow);
@@ -176,7 +189,10 @@ function cloudClear() {
   state.templates = [];
   cloud.catalog = [];
   cloud.lotes = [];
+  cloud.usuarios = [];
+  cloud.ajustes = {};
   cloud.rol = '';
+  imgCache.forEach((url) => URL.revokeObjectURL(url));
   imgCache.clear();
   refreshTemplateList();
   refreshCatalogUI();
@@ -249,9 +265,20 @@ function openGModal() {
       cur.append(' · ');
       cur.appendChild(sheetLink('Administrar usuarios', `${gSheetUrl()}#gid=${G.sheet.tabs.Usuarios}`));
     }
+    const fix = $('gFixed');
+    fix.innerHTML = '';
+    if (sheetFixed()) {
+      fix.textContent = 'Es la planilla del equipo, fijada en config.js: todos los usuarios trabajan sobre ella.';
+    } else {
+      // Puesta en marcha: falta fijarla para que el resto del equipo no elija otra.
+      fix.append('Para que todo el equipo use esta planilla, cargá su ID en config.js (spreadsheetId): ');
+      fix.appendChild(el('code', null, G.sheet.id));
+    }
   } else {
     cur.textContent = 'Todavia no hay una planilla elegida. Pegá la URL de la planilla del equipo o creá una nueva.';
+    $('gFixed').textContent = '';
   }
+  $('gChange').hidden = sheetFixed();
   $('gSheetInput').value = '';
   $('gErr').textContent = '';
   $('gReload').disabled = !G.sheet;
@@ -283,7 +310,7 @@ async function createSheet() {
   syncCloudUI();
   if (!ok) return;
   openGModal();
-  toast('Planilla creada. Compartila con el equipo desde Google Sheets (boton Compartir).');
+  toast('Planilla creada. Falta cargar su ID en config.js para que todo el equipo use esta.');
 }
 
 /* ---------------- Plantillas ---------------- */
@@ -473,15 +500,14 @@ async function paintLote() {
 
   img.removeAttribute('src');
   box.classList.add('loading');
+  const id = reg.imagen;
   try {
-    const data = await gLoadImage(reg.imagen);
-    if (data) imgCache.set(reg.imagen, data);
+    const url = URL.createObjectURL(await gImageBlob(id));
+    imgCache.set(id, url);
     // Mientras bajaba, el usuario pudo haber pasado a otra etiqueta.
-    if (currentLote() !== lote) return;
-    if (data) img.src = data;
-    else info.textContent += ' (la imagen ya no esta en la planilla)';
+    if (currentLote() === lote) img.src = url;
   } catch (err) {
-    if (currentLote() === lote) info.textContent += ' · no se pudo cargar la imagen';
+    if (currentLote() === lote) info.textContent += ' · no se pudo cargar la imagen: ' + err.message;
   } finally {
     box.classList.remove('loading');
   }
@@ -512,32 +538,34 @@ async function registerLote() {
   toast(nuevo ? `Lote ${currentLote()} registrado` : `Lote ${currentLote()} actualizado`);
 }
 
-/* Achica la foto a JPEG hasta que entre en la planilla. La imagen es solo
-   de registro, asi que 1600 px de lado alcanzan de sobra. */
-function compressImage(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('El archivo no es una imagen valida.')); };
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const cap = IMG_CHUNK * IMG_MAX_CHUNKS;
-      for (const [max, q] of [[1600, 0.82], [1280, 0.75], [1024, 0.7], [800, 0.6]]) {
-        const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-        const cv = document.createElement('canvas');
-        cv.width = Math.max(1, Math.round(img.naturalWidth * k));
-        cv.height = Math.max(1, Math.round(img.naturalHeight * k));
-        const ctx = cv.getContext('2d');
-        ctx.fillStyle = '#fff';                       // JPEG no tiene transparencia
-        ctx.fillRect(0, 0, cv.width, cv.height);
-        ctx.drawImage(img, 0, 0, cv.width, cv.height);
-        const out = cv.toDataURL('image/jpeg', q);
-        if (out.length - out.indexOf(',') - 1 <= cap) return resolve(out);
-      }
-      reject(new Error('No se pudo achicar la imagen lo suficiente.'));
-    };
-    img.src = url;
-  });
+/* Devuelve el id de la carpeta de imagenes del equipo, creandola la primera
+   vez. El id queda en la pestana Ajustes para que todos suban a la misma.
+   Antes de crearla se relee Ajustes: otra persona pudo haberla creado
+   despues de la ultima carga. */
+async function imageFolder() {
+  const guardada = async () => {
+    const { rows } = await gReadTab('Ajustes');
+    const r = rows.find((x) => String(x.clave).trim() === 'carpetaImagenes');
+    return r ? String(r.valor || '').trim() : '';
+  };
+  let id = cloud.ajustes.carpetaImagenes || await guardada();
+  if (id) {
+    if (await gFolderOk(id)) return (cloud.ajustes.carpetaImagenes = id);
+    throw new Error('No se puede abrir la carpeta de imagenes del equipo en Drive. Pedile a un administrador que la comparta con tu cuenta (o que revise la clave carpetaImagenes en la pestana Ajustes).');
+  }
+
+  // Al lado de la planilla, asi quedan juntas en Drive.
+  const folder = await gCreateFolder(FOLDER_NAME, await gParentOf(G.sheet.id));
+  await gUpsert('Ajustes', 'clave', { clave: 'carpetaImagenes', valor: folder.id });
+  cloud.ajustes.carpetaImagenes = folder.id;
+  /* Se comparte ya con los usuarios activos, para no depender de que corra
+     el script de permisos. Un mail que Google rechace no frena la subida. */
+  const yo = G.email.toLowerCase();
+  for (const u of cloud.usuarios) {
+    const email = String(u.email).trim();
+    if (email.toLowerCase() !== yo) await gShare(folder.id, email).catch(() => {});
+  }
+  return folder.id;
 }
 
 async function attachLoteImage() {
@@ -550,51 +578,52 @@ async function attachLoteImage() {
 
   const file = await pickFile('image/*');
   if (!file) return;
+  if (!file.type.startsWith('image/')) return toast('El archivo no es una imagen.', true);
+  if (file.size > IMG_MAX) return toast('La imagen es demasiado grande (max 20 MB).', true);
+
   // Se copia el id ahora: writeLote actualiza el registro en el lugar.
   const anterior = (findLote(lote) || {}).imagen;
-  const ok = await cloudTask('Subiendo imagen…', async () => {
-    const data = await compressImage(file);
-    const id = 'img-' + Date.now().toString(36);
-    await gSaveImage(id, data);
-    imgCache.set(id, data);
-    await writeLote({ imagen: id, archivo: file.name });
-    // La imagen anterior se borra despues: si algo falla, el lote no queda sin ninguna.
-    if (anterior) await gDeleteImage(anterior).catch(() => {});
+  const ok = await cloudTask('Subiendo imagen a Drive…', async () => {
+    const folder = await imageFolder();
+    const subida = await gUploadImage(file, `Lote ${lote} - ${file.name}`, folder);
+    imgCache.set(subida.id, URL.createObjectURL(file));
+    await writeLote({ imagen: subida.id, archivo: file.name, enlace: subida.webViewLink || '' });
+    // La anterior se manda a la papelera despues: si algo falla, el lote no
+    // queda sin ninguna.
+    if (anterior) await gTrash(anterior);
     return true;
   });
   if (!ok) return;
   refreshLoteUI();
-  toast(`Imagen asociada al lote ${lote}`);
+  toast(`Imagen del lote ${lote} guardada en Drive`);
 }
 
 async function removeLoteImage() {
   if (!requireCloud()) return;
   const reg = findLote(currentLote());
   if (!reg || !reg.imagen) return;
-  if (!confirm(`¿Quitar la imagen del lote ${reg.lote}?`)) return;
+  if (!confirm(`¿Quitar la imagen del lote ${reg.lote}? El archivo va a la papelera de Drive.`)) return;
+  const id = reg.imagen;
+  let enPapelera = false;
   const ok = await cloudTask('Quitando imagen…', async () => {
-    await gDeleteImage(reg.imagen);
-    await writeLote({ imagen: '', archivo: '' });
+    await writeLote({ imagen: '', archivo: '', enlace: '' });
+    enPapelera = await gTrash(id);
     return true;
   });
   if (!ok) return;
   refreshLoteUI();
-  toast(`Imagen quitada del lote ${reg.lote}`);
+  toast(enPapelera
+    ? `Imagen quitada del lote ${reg.lote}`
+    : `Imagen desvinculada del lote ${reg.lote}. El archivo lo subio otra persona: sigue en la carpeta de Drive.`);
 }
 
-/* Abre la imagen en tamano real en otra pestana. Chrome no navega a URLs
-   data:, asi que se pasa por un Blob. */
+/* Abre la imagen en Drive, en otra pestana. Si no hay enlace (fila cargada
+   a mano), abre la copia que ya bajo la app. */
 function openLoteImage() {
-  const src = $('loteImg').src;
-  if (!src || !src.startsWith('data:')) return;
-  const [head, b64] = src.split(',');
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const mime = (head.match(/^data:([^;]+)/) || [])[1] || 'image/jpeg';
-  window.open(URL.createObjectURL(new Blob([bytes], { type: mime })), '_blank');
+  const reg = findLote(currentLote());
+  const url = (reg && reg.enlace) || $('loteImg').src;
+  if (url) window.open(url, '_blank', 'noopener');
 }
-
 /* ---------------- Eventos ---------------- */
 
 function bindCloudEvents() {

@@ -13,8 +13,9 @@ window.ETIQUETAPP_CONFIG = {
      Termina en ".apps.googleusercontent.com". */
   googleClientId: '',
 
-  /* Opcional: ID de la planilla compartida del equipo (la parte entre
-     "/d/" y "/edit" de su URL). Si queda vacio, cada usuario la elige o la
-     crea desde la app la primera vez que se conecta. */
+  /* ID de la planilla del equipo (la parte entre "/d/" y "/edit" de su URL).
+     Con este valor cargado todos los usuarios trabajan sobre esa planilla y
+     la app no ofrece elegir ni crear otra. Vacio solo durante la puesta en
+     marcha: deja crear la planilla una vez para despues copiar su ID aca. */
   spreadsheetId: ''
 };
