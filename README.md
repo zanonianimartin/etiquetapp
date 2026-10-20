@@ -1,0 +1,283 @@
+# EtiquetApp
+
+Aplicación web para armar hojas A4 de etiquetas y mandarlas a imprimir. Es un sitio
+estático (HTML + JavaScript, sin servidor ni compilación) pensado para publicarse en
+GitHub Pages. El catálogo de códigos, las plantillas y el registro de lotes se guardan en
+una planilla de Google Sheets compartida por el equipo, con login de Google.
+
+## Puesta en marcha
+
+Se hace una sola vez. Hacen falta una cuenta de GitHub y una de Google.
+
+### 1. Publicar el sitio en GitHub Pages
+
+1. Crear un repositorio **público** en GitHub (por ejemplo `etiquetapp`). Con una cuenta
+   gratuita, Pages solo publica repositorios públicos: el código queda visible, pero no
+   contiene datos ni claves (ver `config.js`).
+2. Subir el contenido de esta carpeta:
+   ```
+   git init
+   git add .
+   git commit -m "EtiquetApp web"
+   git branch -M main
+   git remote add origin https://github.com/USUARIO/etiquetapp.git
+   git push -u origin main
+   ```
+3. En el repositorio: **Settings → Pages → Build and deployment**. Source: *Deploy from a
+   branch*; Branch: `main`, carpeta `/ (root)`. Guardar.
+4. Al minuto el sitio queda en `https://USUARIO.github.io/etiquetapp/`.
+
+### 2. Crear el acceso a Google
+
+En [console.cloud.google.com](https://console.cloud.google.com):
+
+1. Crear un proyecto nuevo (por ejemplo "EtiquetApp").
+2. **APIs y servicios → Biblioteca**: buscar **Google Sheets API** y habilitarla.
+3. **Google Auth Platform** (pantalla de consentimiento OAuth):
+   - *Información de la marca*: nombre de la app y mail de contacto.
+   - *Público*: **Interno** si el equipo usa Google Workspace (entra cualquier cuenta de la
+     organización). Si son cuentas @gmail, **Externo**, dejarlo en estado *Prueba* y
+     agregar en *Usuarios de prueba* el mail de cada persona del equipo (hasta 100).
+   - *Acceso a los datos*: agregar el permiso `.../auth/spreadsheets`.
+4. **Clientes → Crear cliente**: tipo **Aplicación web**. En *Orígenes autorizados de
+   JavaScript* agregar `https://USUARIO.github.io` (sin la ruta del repositorio) y, para
+   probar en la PC, `http://localhost:8080`. No hace falta ninguna URI de redireccionamiento.
+5. Copiar el **ID de cliente** (termina en `.apps.googleusercontent.com`) en `config.js`,
+   en `googleClientId`, y volver a subir el cambio a GitHub.
+
+En estado *Prueba* Google muestra el aviso "Google no verificó esta app" al conectarse: es
+esperable para una herramienta interna, se sigue con *Continuar*. La verificación de Google
+solo hace falta para abrir la app a cualquier cuenta.
+
+### 3. Crear la planilla del equipo
+
+1. Entrar al sitio y tocar **Conectar con Google**.
+2. En la ventana *Planilla de Google*, **Crear planilla nueva**. La app arma las pestañas.
+3. Abrir la planilla (el enlace aparece en esa misma ventana) y compartirla con el equipo
+   con permiso de **Editor**.
+4. Opcional: pegar el ID de la planilla en `config.js` (`spreadsheetId`) para que el resto
+   del equipo entre directo, sin tener que pegar la URL la primera vez.
+
+### Migrar las plantillas de la versión de escritorio
+
+La versión Electron guardaba las plantillas y el logo en
+`%APPDATA%\etiquetapp\etiquetapp-config.json`. Se convierten a un proyecto (`.etq.json`)
+y se abre con **Abrir** estando conectado: la app ofrece subir a la planilla las
+plantillas que no estén (las compara por nombre) y toma el logo.
+
+### Probar en la PC
+
+El login de Google no funciona abriendo `index.html` con doble clic: hace falta servir la
+carpeta por HTTP. Con Node.js instalado:
+
+```
+npx http-server -p 8080 -c-1
+```
+
+y abrir `http://localhost:8080` (tiene que estar entre los orígenes autorizados del paso 2).
+
+## La planilla
+
+La app crea cuatro pestañas y encuentra cada columna por el nombre de la fila 1, así que se
+pueden reordenar columnas o agregar columnas propias. Si falta una pestaña o una columna,
+la app la agrega sola al conectarse.
+
+| Pestaña | Una fila por | Columnas |
+|---|---|---|
+| `Catalogo` | código de barras | codigo, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
+| `Plantillas` | plantilla | id, nombre, producto, cantidad, unidad, codigo, ingredientes, infoExtra, nutri, diseno, actualizado, por |
+| `Lotes` | lote | lote, codigo, producto, vencimiento, imagen, archivo, actualizado, por |
+| `Imagenes` | imagen de lote | id, tipo, datos (columnas C a Z) |
+
+- `nutri` es la tabla nutricional en formato JSON. Conviene editarla desde la app.
+- `actualizado` y `por` se completan solos con la fecha y el mail de quien guardó.
+- Las plantillas se identifican por `id`: una fila agregada a mano sin `id` se ignora.
+- Las imágenes se guardan dentro de la planilla, como texto base64 repartido en celdas
+  (una celda admite hasta 50.000 caracteres). Así quien tiene acceso a la planilla tiene
+  acceso a las imágenes, sin pedir permisos sobre Google Drive. La app las achica a JPEG de
+  hasta 1600 px antes de subirlas.
+
+## Qué hace
+
+**Formatos de hoja.** Preajustes de 1x1 hasta 5x8 (2x4 = 8 etiquetas, 4x4 = 16, 3x7 = 21,
+4x10 = 40, etc.) o columnas y filas a mano. Los márgenes de la hoja y la separación entre
+etiquetas se ajustan en milímetros; el panel muestra el tamaño real de cada etiqueta.
+Opcionalmente imprime borde de corte y marcas de corte en los bordes de la hoja.
+
+**Datos de la etiqueta.** Producto, cantidad, unidad (gr, kg, mg, ml, lt, cc, un), lote,
+vencimiento y código de barras. **Los seis campos son obligatorios**: mientras falte alguno,
+los botones *Imprimir* y *Exportar PDF* quedan deshabilitados y la barra superior indica qué
+etiqueta y qué campo falta. En la vista previa, las etiquetas incompletas salen marcadas en
+rojo y las que todavía no tienen datos en gris.
+
+Hay además dos campos **opcionales**, que no bloquean la impresión y no se imprimen si
+quedan vacíos:
+
+- **Ingredientes.** Texto libre (hasta 400 caracteres, respeta los saltos de línea). Se
+  imprime en la columna derecha del diseño *Dos columnas*; los otros diseños lo ignoran.
+- **Información adicional.** Una línea (hasta 120 caracteres) que se imprime **justo encima
+  del código de barras**, en los seis diseños. Pensado para leyendas del tipo
+  "Industria Uruguaya" o "Conservar en lugar fresco y seco".
+
+Los dos describen al producto y no a la tirada, así que se guardan junto con las
+**plantillas** (a diferencia del lote y el vencimiento).
+
+**Cantidad de etiquetas.** Se escribe cuántas se quieren imprimir (1 a 2000) y la app arma
+las hojas que hagan falta, replicando los datos automáticamente en cada etiqueta. Hay accesos
+rápidos para 1 hoja, 50, 64 y 100. Bajar la cantidad no borra nada: los datos quedan
+guardados y vuelven si se sube de nuevo. Los espacios que sobran en la última hoja se
+imprimen en blanco.
+
+Si hace falta editar una etiqueta suelta, se destilda *Aplicar los cambios a todas las
+etiquetas* y se hace clic sobre la que se quiera cambiar (las flechas del teclado también
+mueven la selección).
+
+**Tabla nutricional** (opcional). Se carga elemento por elemento desde una ventana modal:
+título, porción de referencia y una fila por nutriente con nombre, valor, unidad y %VD. Al
+activarla se precarga el rótulo estándar (valor energético, carbohidratos, proteínas, grasas
+totales, saturadas y trans, fibra y sodio) con los valores en blanco para completar; también
+se pueden agregar o quitar filas a mano. La tabla se imprime **dentro** de la etiqueta y
+funciona en los seis diseños (en *Dos columnas* ocupa la mitad izquierda). Si el %VD queda
+vacío en todas las filas, esa columna no se
+imprime. Mientras la tabla esté activada no se puede imprimir con filas a medio cargar.
+
+La tabla admite además dos aclaraciones opcionales, de hasta 200 caracteres cada una:
+
+- **Pie dentro del recuadro.** Va debajo de las filas, separado por una línea, con letra
+  más chica que los datos.
+- **Nota debajo de la tabla.** Va fuera del recuadro, sin borde y con letra todavía más
+  chica que el pie, para que se lea como aclaración al margen.
+
+Se pueden usar las dos o solo una; la que quede vacía no imprime nada. Cada una tiene un
+botón que carga la frase de la **declaración nutricional simplificada** —"No aporta
+cantidades significativas de …"— como punto de partida: queda completarla con el valor
+energético y/o los nutrientes que correspondan a cada producto. Si la tabla está
+desactivada no se imprime ninguna de las dos.
+
+**Plantillas guardadas.** *Guardar datos actuales como plantilla* archiva producto, cantidad,
+unidad, código, ingredientes, información adicional, tabla nutricional y diseño con un
+nombre. **No guarda el lote ni el
+vencimiento**, porque cambian en cada tirada. Al aplicar una plantilla se completan los datos
+del producto y hay que cargar esos dos campos. Las plantillas se guardan en la planilla de
+Google, así que las ve todo el equipo; para usarlas hay que estar conectado. Guardar con un
+nombre que ya existe (sin distinguir mayúsculas) actualiza esa plantilla.
+
+Como la plantilla también guarda el diseño, aplicarla cambia el diseño elegido. La casilla
+***Aplicar también el diseño guardado*** controla eso: destildada, la plantilla completa
+únicamente los datos y respeta el diseño que esté seleccionado. Cuando el cambio ocurre, el
+aviso lo dice ("… · diseno: Marca de agua"). La preferencia queda guardada entre sesiones.
+
+Las plantillas guardadas antes de que existieran los campos *ingredientes* e *información
+adicional* no los traen. Al aplicarlas **se respeta lo que ya tenga la etiqueta** en vez de
+borrarlo; solo se limpian si la plantilla los guardó explícitamente vacíos.
+
+**Catálogo de códigos** (requiere conexión con Google). *Guardar etiqueta actual en el
+catálogo* archiva, bajo su código de barras, todo lo de la etiqueta **menos el lote y el
+vencimiento**: producto, cantidad, unidad, tipo de código, ingredientes, información
+adicional y tabla nutricional. Después, elegir ese código —desde el buscador del catálogo,
+por código o por nombre de producto, o directamente en el campo *Código de barras*—
+completa todo lo demás. Si el código ya está en el catálogo con otro producto, pide
+confirmación antes de reemplazarlo.
+
+**Registro de lotes** (requiere conexión con Google). Asocia el lote de la etiqueta
+seleccionada con su código, producto y vencimiento, y opcionalmente con una imagen de
+registro (por ejemplo, una foto de la tirada). **La imagen no se imprime**: se ve en el panel
+y, con un clic, en tamaño real. Cambiar la imagen reemplaza la anterior. El campo *Lote*
+sugiere los lotes ya registrados.
+
+**Datos compartidos.** Con varias personas trabajando a la vez, cada guardado relee la
+planilla antes de escribir, para no pisar filas que otro haya agregado o borrado. Las listas
+se refrescan solas al volver a la pestaña (si pasó más de un minuto) o con *Actualizar
+datos* en la ventana de la planilla.
+
+**Aviso de contenido recortado.** Si lo cargado no entra en la etiqueta —lo habitual al activar
+la tabla nutricional en grillas chicas— la barra sobre la vista previa avisa cuántas etiquetas
+se van a imprimir recortadas y esas etiquetas se marcan en ámbar. No bloquea la impresión: se
+resuelve bajando la escala de texto, usando menos filas y columnas o achicando la tabla.
+
+**Seis diseños de etiqueta.**
+
+| Diseño | Disposición | Peso del logo |
+|---|---|---|
+| Clásica | logo arriba centrado, producto, cantidad grande, lote y vencimiento, código abajo | 7 % |
+| Compacta | logo y producto en una franja superior, datos a la izquierda y código a la derecha | 4 % |
+| Destacada | logo arriba a la izquierda, cantidad en recuadro negro, código a lo ancho del pie | 5 % |
+| Logo grande | logo en una banda a todo el ancho arriba, datos y código debajo | 21 % |
+| Marca de agua | logo de fondo atenuado ocupando toda la etiqueta, datos encima | 76 % |
+| Dos columnas | igual que *Marca de agua*, pero el cuerpo se parte en dos mitades: tabla nutricional a la izquierda, ingredientes a la derecha | 76 % |
+
+El porcentaje es la superficie de la etiqueta que ocupa el logo en una grilla 2x4, medido
+sobre el logo por defecto.
+
+*Dos columnas* hereda de *Marca de agua* el fondo, la intensidad y el manejo de la posición
+del logo. Las dos mitades son **50 % y 50 %** y se estiran al mismo alto, así el bloque queda
+parejo aunque la lista de ingredientes sea corta. Si falta uno de los dos —no hay tabla, o no
+hay ingredientes— el que quede **ocupa el ancho completo** en lugar de dejar media etiqueta
+vacía. Es el diseño que más contenido mete, así que conviene usarlo en etiquetas grandes
+(2x4 o menos) y vigilar el aviso de contenido recortado.
+
+En *Marca de agua* y *Dos columnas* aparece un control extra de **intensidad** (4 % a 40 %, por defecto 14 %)
+para graduar cuánto se nota el fondo según el logo que se use. La marca se dibuja como imagen
+y no como fondo CSS, así que sale impresa siempre, sin depender de la opción "imprimir
+fondos" del driver de la impresora.
+
+**Logo.** Trae uno por defecto (`assets/logo-default.svg`) y se reemplaza por cualquier
+PNG, JPG, SVG, GIF, WEBP o BMP de hasta 3 MB. El logo elegido, igual que el formato de hoja,
+el diseño y el zoom, queda guardado **en este navegador** (cada computadora recuerda el suyo).
+Se puede ocultar o escalar del 40 % al 180 %.
+
+**Posición del logo.** Dos sliders, horizontal y vertical, lo mueven libremente por la
+etiqueta (0 a 100 en cada eje, de a 1). El contenido reserva el alto del logo por arriba o por
+abajo según dónde esté, así no queda texto tapado. Funciona en los seis diseños; en
+*Marca de agua* y *Dos columnas* mueve el fondo, que sí se superpone a los datos a propósito.
+
+La caja del logo se calcula con la proporción real del archivo, así que ocupa exactamente
+lo que la imagen necesita, sin márgenes muertos, y nunca se sale de la etiqueta.
+
+**Códigos de barras.** CODE128 (por defecto), EAN-13, EAN-8, UPC-A, CODE39 e ITF-14.
+Valida largo y dígito verificador, y cuando está mal indica cuál debería ser. Si se cargan
+12 dígitos en un EAN-13, el dígito verificador se calcula solo.
+
+**Carga por lista** (opcional, solo si hacen falta productos distintos en la misma tirada).
+Una línea por producto con el formato
+
+```
+producto | cantidad | unidad | lote | vencimiento | código | cantidad de etiquetas
+```
+
+y la app reparte las etiquetas en las hojas que hagan falta. Si una línea queda incompleta,
+lo avisa y no deja imprimir. También hay numeración correlativa de lotes (prefijo + contador
+con relleno de ceros), útil para tiradas donde cada etiqueta lleva un lote distinto.
+
+**Salida.** *Imprimir* abre el diálogo de impresión del navegador. *Exportar PDF* abre el
+mismo diálogo: hay que elegir **Guardar como PDF** como destino. En ambos casos conviene
+dejar los márgenes en *Ninguno* y la escala en 100 % si el navegador los ofrece. *Guardar*
+descarga el proyecto como `etiquetas.etq.json` y *Abrir* lo vuelve a cargar.
+
+## Estructura
+
+```
+index.html                   interfaz
+styles.css                   UI + hoja A4 en mm + estilos de impresión
+app.js                       estado, render de etiquetas, códigos de barras
+config.js                    ID de cliente de Google y planilla por defecto
+google.js                    login de Google y acceso a la Sheets API
+cloud.js                     catálogo, plantillas y lotes contra la planilla
+browser-api.js               archivos, impresión y configuración local del navegador
+assets/logo-default.svg      logo por defecto
+vendor/JsBarcode.all.min.js
+```
+
+Toda la hoja se maquetea en milímetros con `@page { size: A4; margin: 0 }`, así que lo que
+se ve en pantalla es lo que sale impreso.
+
+## Atajos
+
+| Atajo | Acción |
+|---|---|
+| `Ctrl` + `P` | Imprimir |
+| `Ctrl` + `S` | Guardar proyecto |
+| Flechas | Mover la selección de etiqueta |
+| Rueda del mouse | Ajustar un campo numérico (hay que hacer clic en el campo primero) |
+| `Shift` + rueda | Igual, pero de a 10 |
+| `Ctrl` + rueda | Zoom de la vista previa |

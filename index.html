@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
+<title>EtiquetApp - Generador de etiquetas A4</title>
+<link rel="icon" href="assets/logo-default.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar no-print">
+  <div class="brand">
+    <span class="brand-mark">▦</span>
+    <div>
+      <strong>EtiquetApp</strong>
+      <small>Etiquetas en hojas A4</small>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <span id="printStatus" class="status"></span>
+    <button id="btnGoogle" class="btn ghost google">Conectar con Google</button>
+    <span class="sep"></span>
+    <button id="btnOpen" class="btn ghost" title="Abrir proyecto guardado">Abrir</button>
+    <button id="btnSave" class="btn ghost" title="Guardar proyecto">Guardar</button>
+    <span class="sep"></span>
+    <button id="btnPdf" class="btn">Exportar PDF</button>
+    <button id="btnPrint" class="btn primary">Imprimir</button>
+  </div>
+</header>
+
+<main class="layout no-print-layout">
+
+  <!-- ============ PANEL IZQUIERDO: HOJA Y DISENO ============ -->
+  <aside class="panel left no-print">
+
+    <section class="group">
+      <h3>Formato de hoja</h3>
+
+      <label class="field">
+        <span>Distribucion</span>
+        <select id="preset"></select>
+      </label>
+
+      <div class="row2">
+        <label class="field">
+          <span>Columnas</span>
+          <input type="number" id="cols" min="1" max="12" step="1">
+        </label>
+        <label class="field">
+          <span>Filas</span>
+          <input type="number" id="rows" min="1" max="20" step="1">
+        </label>
+      </div>
+
+      <p class="hint" id="labelSizeHint">—</p>
+
+      <details class="adv">
+        <summary>Margenes y separacion (mm)</summary>
+        <div class="row2">
+          <label class="field"><span>Margen sup.</span><input type="number" id="mTop" min="0" max="60" step="0.5"></label>
+          <label class="field"><span>Margen inf.</span><input type="number" id="mBottom" min="0" max="60" step="0.5"></label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>Margen izq.</span><input type="number" id="mLeft" min="0" max="60" step="0.5"></label>
+          <label class="field"><span>Margen der.</span><input type="number" id="mRight" min="0" max="60" step="0.5"></label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>Sep. horiz.</span><input type="number" id="gapX" min="0" max="30" step="0.5"></label>
+          <label class="field"><span>Sep. vert.</span><input type="number" id="gapY" min="0" max="30" step="0.5"></label>
+        </div>
+      </details>
+
+      <label class="check"><input type="checkbox" id="showBorder"> Imprimir borde de corte</label>
+      <label class="check"><input type="checkbox" id="showGuides"> Marcas de corte en esquinas</label>
+    </section>
+
+    <section class="group">
+      <h3>Diseno de etiqueta</h3>
+      <div id="templatePicker" class="tpl-picker"></div>
+
+      <label class="field">
+        <span>Escala de texto <b id="fontScaleVal">100%</b></span>
+        <input type="range" id="fontScale" min="60" max="150" step="5">
+      </label>
+    </section>
+
+    <section class="group">
+      <h3>Logo</h3>
+      <div class="logo-box">
+        <img id="logoPreview" alt="logo">
+      </div>
+      <div class="row2">
+        <button id="btnLogo" class="btn ghost small">Cambiar…</button>
+        <button id="btnLogoReset" class="btn ghost small">Restaurar</button>
+      </div>
+      <label class="check"><input type="checkbox" id="showLogo" checked> Mostrar logo en la etiqueta</label>
+
+      <label class="field">
+        <span>Horizontal <b id="logoXVal">Centro</b></span>
+        <input type="range" id="logoX" min="0" max="100" step="1">
+        <em class="range-ends"><span>Izquierda</span><span>Derecha</span></em>
+      </label>
+      <label class="field">
+        <span>Vertical <b id="logoYVal">Arriba</b></span>
+        <input type="range" id="logoY" min="0" max="100" step="1">
+        <em class="range-ends"><span>Arriba</span><span>Abajo</span></em>
+      </label>
+      <p class="hint" id="logoPosHint">—</p>
+
+      <label class="field">
+        <span>Tamano del logo <b id="logoScaleVal">100%</b></span>
+        <input type="range" id="logoScale" min="40" max="180" step="5">
+      </label>
+      <label class="field" id="wmField" hidden>
+        <span>Intensidad de la marca de agua <b id="wmOpacityVal">14%</b></span>
+        <input type="range" id="wmOpacity" min="4" max="40" step="1">
+      </label>
+    </section>
+
+    <section class="group">
+      <h3>Codigo de barras</h3>
+      <label class="field">
+        <span>Tipo</span>
+        <select id="barcodeType">
+          <option value="CODE128">CODE128 (texto y numeros)</option>
+          <option value="EAN13">EAN-13 (12-13 digitos)</option>
+          <option value="EAN8">EAN-8 (7-8 digitos)</option>
+          <option value="CODE39">CODE39</option>
+          <option value="ITF14">ITF-14</option>
+          <option value="UPC">UPC-A (11-12 digitos)</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="barcodeText" checked> Mostrar numero debajo</label>
+      <label class="field">
+        <span>Altura <b id="barcodeHVal">100%</b></span>
+        <input type="range" id="barcodeH" min="50" max="180" step="5">
+      </label>
+    </section>
+
+  </aside>
+
+  <!-- ============ CENTRO: PREVIEW ============ -->
+  <section class="workspace no-print-ui">
+    <div class="workspace-bar no-print">
+      <div class="zoomctl">
+        <button id="zoomOut" class="btn ghost small">−</button>
+        <span id="zoomVal">70%</span>
+        <button id="zoomIn" class="btn ghost small">+</button>
+        <button id="zoomFit" class="btn ghost small">Ajustar</button>
+      </div>
+      <div class="pagectl">
+        <span id="fitWarn" class="status warn" hidden></span>
+        <span id="pageInfo" class="muted">—</span>
+      </div>
+    </div>
+    <div class="scroll" id="scroll">
+      <div id="sheets" class="sheets"></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL DERECHO: DATOS ============ -->
+  <aside class="panel right no-print">
+
+    <section class="group">
+      <h3>Catalogo de codigos <span id="catCount" class="badge">—</span></h3>
+      <p class="hint cloud-msg">Conectate con Google para usar el catalogo compartido.</p>
+      <div class="cloud-body">
+        <label class="field">
+          <span>Codigo o producto</span>
+          <input type="text" id="catSearch" list="catList" placeholder="7791234567898" maxlength="80">
+        </label>
+        <datalist id="catList"></datalist>
+        <div class="row2">
+          <button id="btnCatApply" class="btn small">Aplicar</button>
+          <button id="btnCatDelete" class="btn ghost small danger">Eliminar</button>
+        </div>
+        <button id="btnCatSave" class="btn ghost small wide">Guardar etiqueta actual en el catalogo</button>
+        <p class="hint">Completa <b>todo menos el lote y el vencimiento</b>. Tambien se aplica al
+          elegir un codigo del catalogo en el campo <b>Codigo de barras</b>.</p>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Plantillas guardadas</h3>
+      <p class="hint cloud-msg">Conectate con Google para usar las plantillas compartidas.</p>
+      <div class="cloud-body">
+        <label class="field">
+          <span>Plantilla</span>
+          <select id="tplSaved"><option value="">— ninguna —</option></select>
+        </label>
+        <div class="row2">
+          <button id="btnTplApply" class="btn small">Aplicar</button>
+          <button id="btnTplDelete" class="btn ghost small danger">Eliminar</button>
+        </div>
+        <label class="check"><input type="checkbox" id="tplWithDesign" checked>
+          Aplicar tambien el diseno guardado</label>
+        <button id="btnTplSave" class="btn ghost small wide">Guardar datos actuales como plantilla</button>
+        <p class="hint">La plantilla guarda producto, cantidad, unidad, codigo, ingredientes,
+          informacion adicional y diseno.
+          <b>No guarda el lote ni el vencimiento</b>, que se cargan en cada tirada.</p>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Datos de la etiqueta <span id="selInfo" class="badge">—</span></h3>
+
+      <label class="field req">
+        <span>Producto</span>
+        <input type="text" id="fProducto" placeholder="Ej: Yerba mate compuesta" maxlength="80">
+      </label>
+
+      <div class="row3">
+        <label class="field req">
+          <span>Cantidad</span>
+          <input type="text" id="fCantidad" placeholder="500" maxlength="12">
+        </label>
+        <label class="field req">
+          <span>Unidad</span>
+          <select id="fUnidad">
+            <option value="gr">gr</option>
+            <option value="kg">kg</option>
+            <option value="mg">mg</option>
+            <option value="ml">ml</option>
+            <option value="lt">lt</option>
+            <option value="cc">cc</option>
+            <option value="un">un</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field req">
+        <span>Lote</span>
+        <input type="text" id="fLote" list="loteList" placeholder="L-2026-001" maxlength="32">
+      </label>
+      <datalist id="loteList"></datalist>
+
+      <label class="field req">
+        <span>Vencimiento</span>
+        <input type="text" id="fVenc" placeholder="12/2027" maxlength="24">
+      </label>
+
+      <label class="field">
+        <span>Ingredientes <span class="badge">opcional</span></span>
+        <textarea id="fIngredientes" rows="3" maxlength="400" spellcheck="false"
+                  placeholder="Lentejones, sal, antihumectante INS 551"></textarea>
+      </label>
+      <p class="hint">Se imprime en la columna derecha del diseno
+        <b>Dos columnas</b>, al lado de la tabla nutricional.</p>
+
+      <label class="field">
+        <span>Codigo de barras <span class="badge">opcional</span></span>
+        <input type="text" id="fCodigo" list="catList" placeholder="7791234567898" maxlength="40">
+        <em class="err" id="codigoErr"></em>
+      </label>
+
+      <label class="field">
+        <span>Informacion adicional <span class="badge">opcional</span></span>
+        <input type="text" id="fInfoExtra" maxlength="120"
+               placeholder="Industria Uruguaya - Conservar en lugar fresco y seco">
+      </label>
+      <p class="hint">Se imprime justo <b>encima del codigo de barras</b>, en todos los disenos.</p>
+
+      <button id="btnNutri" class="btn ghost small wide">
+        Tabla nutricional… <span id="nutriBadge" class="badge">opcional</span>
+      </button>
+
+      <label class="check"><input type="checkbox" id="applyAll" checked>
+        Aplicar los cambios a todas las etiquetas</label>
+
+      <button id="btnClearAll" class="btn ghost small wide danger">Vaciar todo</button>
+    </section>
+
+    <section class="group">
+      <h3>Registro de lotes <span id="loteCount" class="badge">—</span></h3>
+      <p class="hint cloud-msg">Conectate con Google para registrar lotes en la planilla.</p>
+      <div class="cloud-body">
+        <p class="hint" id="loteInfo">—</p>
+        <div class="lote-img" id="loteImgBox" hidden>
+          <img id="loteImg" alt="Imagen del lote" title="Abrir en tamano real">
+        </div>
+        <div class="row2">
+          <button id="btnLoteSave" class="btn small">Registrar lote</button>
+          <button id="btnLoteImg" class="btn ghost small">Adjuntar imagen…</button>
+        </div>
+        <button id="btnLoteImgDel" class="btn ghost small wide danger" hidden>Quitar imagen</button>
+        <p class="hint">Guarda el lote de la etiqueta seleccionada con su codigo, producto y
+          vencimiento, y una imagen de registro. <b>La imagen no se imprime.</b></p>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Cantidad de etiquetas</h3>
+      <label class="field req">
+        <span>Etiquetas a imprimir</span>
+        <input type="number" id="qty" min="1" max="2000" step="1" value="8"
+               title="Rueda del mouse para ajustar (Shift = de a 10)">
+      </label>
+      <div class="qty-quick">
+        <button class="btn ghost small" data-qty="hoja">1 hoja</button>
+        <button class="btn ghost small" data-qty="50">50</button>
+        <button class="btn ghost small" data-qty="64">64</button>
+        <button class="btn ghost small" data-qty="100">100</button>
+      </div>
+      <p class="hint" id="qtyHint">—</p>
+      <p class="hint tip">Con el campo seleccionado, la rueda del mouse ajusta el valor
+        (<b>Shift</b> = de a 10). Vale para todos los campos numericos.</p>
+    </section>
+
+    <section class="group">
+      <h3>Carga por lista <span class="badge">opcional</span></h3>
+      <p class="hint">Solo si necesitas productos distintos en la misma tirada.
+        Una linea por producto:<br>
+        <code>producto | cantidad | unidad | lote | vencimiento | codigo | cant. etiquetas</code>
+      </p>
+      <textarea id="bulk" rows="6" spellcheck="false"
+placeholder="Yerba mate | 500 | gr | L-001 | 12/2027 | 7791234567898 | 8
+Miel pura | 1 | kg | L-002 | 06/2028 | 7790000000010 | 4"></textarea>
+      <div class="row2">
+        <button id="btnBulk" class="btn">Generar etiquetas</button>
+        <button id="btnBulkDemo" class="btn ghost small">Ejemplo</button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Numeracion de lotes <span class="badge">opcional</span></h3>
+      <p class="hint">Reemplaza el lote de cada etiqueta con un numero correlativo.</p>
+      <div class="row2">
+        <label class="field"><span>Prefijo</span><input type="text" id="seqPrefix" value="L-" maxlength="16"></label>
+        <label class="field"><span>Desde</span><input type="number" id="seqFrom" value="1" min="0" step="1"></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span>Digitos</span><input type="number" id="seqPad" value="3" min="1" max="10" step="1"></label>
+        <button id="btnSeq" class="btn ghost small">Numerar</button>
+      </div>
+    </section>
+
+  </aside>
+</main>
+
+<!-- Modal de la planilla de Google. Va antes que el de texto: al crear una
+     planilla se pide el nombre encima de este. -->
+<div id="gModal" class="modal-bg no-print">
+  <div class="modal md">
+    <h4>Planilla de Google</h4>
+    <p class="hint" id="gWho">—</p>
+    <p class="hint" id="gCurrent">—</p>
+    <label class="field">
+      <span>Usar otra planilla (URL o ID)</span>
+      <input type="text" id="gSheetInput" placeholder="https://docs.google.com/spreadsheets/d/…">
+    </label>
+    <em class="err" id="gErr"></em>
+    <div class="row2">
+      <button id="gUse" class="btn small">Usar esta planilla</button>
+      <button id="gCreate" class="btn ghost small">Crear planilla nueva</button>
+    </div>
+    <p class="hint">Todo el equipo usa la misma planilla: quien la crea la comparte desde
+      Google Sheets (<b>Compartir</b>) con permiso de <b>Editor</b>. Si le faltan pestanas o
+      columnas, la app las agrega sola.</p>
+    <div class="modal-actions">
+      <button id="gLogout" class="btn ghost small danger">Desconectar</button>
+      <span style="flex:1"></span>
+      <button id="gReload" class="btn ghost small">Actualizar datos</button>
+      <button id="gClose" class="btn primary small">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para nombrar plantillas -->
+<div id="modal" class="modal-bg no-print">
+  <div class="modal">
+    <h4 id="modalTitle">Guardar plantilla</h4>
+    <label class="field">
+      <span>Nombre</span>
+      <input type="text" id="modalInput" maxlength="40">
+    </label>
+    <em class="err" id="modalErr"></em>
+    <div class="modal-actions">
+      <button id="modalCancel" class="btn ghost small">Cancelar</button>
+      <button id="modalOk" class="btn primary small">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de la tabla nutricional -->
+<div id="nutriModal" class="modal-bg no-print">
+  <div class="modal lg">
+    <h4>Tabla nutricional <span class="badge">opcional</span></h4>
+
+    <label class="check"><input type="checkbox" id="nutriOn">
+      Incluir la tabla dentro de la etiqueta</label>
+
+    <div id="nutriBody">
+      <div class="row2">
+        <label class="field">
+          <span>Titulo</span>
+          <input type="text" id="nutriTitulo" maxlength="40" placeholder="INFORMACION NUTRICIONAL">
+        </label>
+        <label class="field">
+          <span>Porcion de referencia</span>
+          <input type="text" id="nutriPorcion" maxlength="30" placeholder="100 g">
+        </label>
+      </div>
+
+      <div class="nutri-head">
+        <span>Elemento</span><span>Cantidad por porcion</span><span>Unidad</span><span>%VD</span><span></span>
+      </div>
+      <div id="nutriList"></div>
+      <p class="hint" id="nutriEmpty">Todavia no hay elementos cargados.</p>
+
+      <div class="row2">
+        <button id="nutriAdd" class="btn ghost small">+ Agregar elemento</button>
+        <button id="nutriPreset" class="btn ghost small">Cargar rotulo estandar</button>
+      </div>
+      <p class="hint">El <b>%VD</b> (valor diario) es opcional; si se deja vacio, esa columna
+        no se imprime. El resto de los campos son obligatorios en cada fila cargada.</p>
+
+      <label class="field">
+        <span>Pie <b>dentro</b> del recuadro <span class="badge">opcional</span></span>
+        <textarea id="nutriPie" rows="2" maxlength="200"
+                  placeholder="No aporta cantidades significativas de ..."></textarea>
+      </label>
+      <div class="row2">
+        <button id="nutriPieStd" class="btn ghost small">Frase de declaracion simplificada</button>
+        <span></span>
+      </div>
+
+      <label class="field">
+        <span>Nota <b>debajo</b> de la tabla <span class="badge">opcional</span></span>
+        <textarea id="nutriNota" rows="2" maxlength="200"
+                  placeholder="No aporta cantidades significativas de ..."></textarea>
+      </label>
+      <div class="row2">
+        <button id="nutriNotaStd" class="btn ghost small">Frase de declaracion simplificada</button>
+        <span></span>
+      </div>
+
+      <p class="hint">El <b>pie</b> va dentro del recuadro, separado de las filas por una
+        linea. La <b>nota</b> va afuera, debajo de la tabla y con letra mas chica. Se pueden
+        usar los dos o solo uno; el que quede vacio no se imprime.<br>
+        La frase estandar se puede emplear cuando se usa la <b>declaracion nutricional
+        simplificada</b>: hay que completarla con el valor energetico y/o los nutrientes
+        que correspondan.</p>
+    </div>
+
+    <em class="err" id="nutriErr"></em>
+    <div class="modal-actions">
+      <button id="nutriDelete" class="btn ghost small danger">Vaciar tabla</button>
+      <span style="flex:1"></span>
+      <button id="nutriCancel" class="btn ghost small">Cancelar</button>
+      <button id="nutriOk" class="btn primary small">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="config.js"></script>
+<script src="vendor/JsBarcode.all.min.js"></script>
+<script src="google.js"></script>
+<script src="browser-api.js"></script>
+<script src="cloud.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

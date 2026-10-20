@@ -1,0 +1,663 @@
+/* ============================================================
+   EtiquetApp — UI + hoja A4
+   ============================================================ */
+
+:root{
+  --bg:#16181c;
+  --panel:#1f2229;
+  --panel2:#262a32;
+  --line:#333844;
+  --txt:#e7e9ee;
+  --muted:#9aa1af;
+  --accent:#4c8dff;
+  --accent2:#2f6fe0;
+  --danger:#e5544b;
+  --ok:#3fb27f;
+  --radius:8px;
+}
+
+*{box-sizing:border-box}
+
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--txt);
+  font:13px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+  overflow:hidden;
+  /* columna flex: la barra fija arriba y el resto ocupa lo que queda.
+     Sin esto, una hoja alta empuja el layout y los paneles dejan de scrollear. */
+  display:flex;
+  flex-direction:column;
+}
+
+/* ---------------- Topbar ---------------- */
+
+.topbar{
+  flex:0 0 52px;
+  height:52px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:0 14px;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:10px}
+.brand-mark{
+  font-size:22px; color:var(--accent);
+  width:34px; height:34px; display:grid; place-items:center;
+  background:var(--panel2); border-radius:var(--radius);
+}
+.brand strong{display:block; font-size:14px; letter-spacing:.2px}
+.brand small{display:block; color:var(--muted); font-size:11px}
+
+.topbar-actions{display:flex; align-items:center; gap:8px}
+.sep{width:1px; height:24px; background:var(--line); margin:0 4px}
+
+/* ---------------- Botones / campos ---------------- */
+
+.btn{
+  background:var(--panel2); color:var(--txt);
+  border:1px solid var(--line); border-radius:var(--radius);
+  padding:7px 12px; font-size:12.5px; cursor:pointer;
+  transition:background .12s, border-color .12s;
+}
+.btn:hover{background:#30353f; border-color:#454c5c}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+.btn.primary:hover{background:var(--accent2)}
+.btn.ghost{background:transparent}
+.btn.ghost:hover{background:var(--panel2)}
+.btn.small{padding:5px 9px; font-size:11.5px}
+.btn.wide{width:100%; margin-top:8px}
+.btn.danger:hover{border-color:var(--danger); color:#ff8b84}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+.btn:disabled:hover{background:var(--panel2); border-color:var(--line)}
+.btn.primary:disabled:hover{background:var(--accent)}
+
+/* pastilla de estado de impresion */
+.status{
+  font-size:11.5px; padding:4px 11px; border-radius:20px;
+  border:1px solid var(--line); background:#14161a; color:var(--muted);
+  max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.status.ok{border-color:#2f6b52; background:#16241e; color:#7fd6ab}
+.status.bad{border-color:#7a3a35; background:#2a1a19; color:#ff9c95}
+.status.warn{border-color:#7d6428; background:#2a2313; color:#f0c46a; cursor:help}
+.badge.on{background:#1c2431; color:#9dc0ff}
+
+.field{display:block; margin-bottom:9px}
+.field>span{display:block; font-size:11px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.4px}
+.field>span b{color:var(--txt); font-weight:600; text-transform:none; letter-spacing:0}
+.field input[type=text], .field input[type=number], .field select, textarea{
+  width:100%; background:#14161a; color:var(--txt);
+  border:1px solid var(--line); border-radius:6px;
+  padding:7px 9px; font-size:12.5px; font-family:inherit;
+}
+.field input:focus, .field select:focus, textarea:focus{
+  outline:none; border-color:var(--accent);
+}
+/* campos obligatorios */
+.field.req > span::after{content:' *'; color:var(--danger); font-weight:700}
+.field.missing input, .field.missing select{border-color:#7a3a35; background:#221618}
+
+.qty-quick{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:2px 0 8px}
+input[type=range]{width:100%; accent-color:var(--accent)}
+textarea{width:100%; resize:vertical; line-height:1.5; font-family:Consolas, monospace; font-size:11.5px}
+
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:end}
+.row3{display:grid; grid-template-columns:1.6fr 1fr; gap:8px}
+.btn-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px}
+.btn-grid .btn:first-child{grid-column:1 / -1}
+
+.check{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); margin:7px 0; cursor:pointer}
+.check input{accent-color:var(--accent)}
+
+.hint{font-size:11px; color:var(--muted); margin:6px 0 8px; line-height:1.5}
+.hint code{background:#14161a; padding:1px 4px; border-radius:4px; font-size:10.5px; color:#b9c2d4}
+.hint.tip{border-left:2px solid var(--line); padding-left:8px; color:#7e8798}
+.hint.tip b{color:var(--muted)}
+.err{display:block; color:#ff8b84; font-size:10.5px; font-style:normal; min-height:13px; margin-top:3px}
+.muted{color:var(--muted); font-size:11.5px}
+.badge{
+  float:right; font-size:10.5px; font-weight:400; color:var(--muted);
+  background:var(--panel2); border-radius:20px; padding:2px 9px;
+}
+
+details.adv{margin:6px 0 10px; border-top:1px solid var(--line); padding-top:8px}
+details.adv summary{cursor:pointer; font-size:11.5px; color:var(--muted); margin-bottom:8px; user-select:none}
+details.adv summary:hover{color:var(--txt)}
+
+/* ---------------- Layout ---------------- */
+
+.layout{
+  flex:1 1 auto;
+  min-height:0;                       /* deja que las columnas scrolleen solas */
+  display:grid;
+  grid-template-columns:270px 1fr 300px;
+  grid-template-rows:minmax(0, 1fr);  /* la fila no crece con el contenido */
+}
+
+.panel{
+  background:var(--panel);
+  min-height:0;
+  overflow-y:auto;
+  padding:14px;
+}
+.panel.left{border-right:1px solid var(--line)}
+.panel.right{border-left:1px solid var(--line)}
+.panel::-webkit-scrollbar, .scroll::-webkit-scrollbar{width:10px; height:10px}
+.panel::-webkit-scrollbar-thumb, .scroll::-webkit-scrollbar-thumb{background:#3a404c; border-radius:6px}
+.panel::-webkit-scrollbar-track, .scroll::-webkit-scrollbar-track{background:transparent}
+
+.group{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--line)}
+.group:last-child{border-bottom:none}
+.group h3{
+  margin:0 0 10px; font-size:11px; text-transform:uppercase;
+  letter-spacing:.9px; color:var(--accent); font-weight:700;
+}
+
+/* ---------------- Selector de plantilla ---------------- */
+
+.tpl-picker{display:grid; grid-template-columns:repeat(3, 1fr); gap:7px; margin-bottom:10px}
+.tpl-opt{
+  border:1.5px solid var(--line); border-radius:7px; padding:5px 4px 6px;
+  background:#14161a; cursor:pointer; text-align:center;
+  transition:border-color .12s, background .12s;
+}
+.tpl-opt:hover{border-color:#5a6274}
+.tpl-opt.on{border-color:var(--accent); background:#1c2431}
+.tpl-opt svg{display:block; width:100%; height:34px}
+.tpl-opt span{
+  display:block; font-size:9.5px; line-height:1.2; color:var(--muted);
+  margin-top:3px; word-break:break-word;
+}
+.tpl-opt.on span{color:var(--txt)}
+
+/* ---------------- Logo ---------------- */
+
+/* El alto se fija en la caja y la imagen la llena con object-fit.
+   Con max-height:100% el porcentaje no resuelve y un logo alto se
+   estiraba fuera de la caja, tapando los controles de abajo. */
+.logo-box{
+  background:#fff; border:1px solid var(--line); border-radius:7px;
+  height:62px; padding:6px; margin-bottom:8px; overflow:hidden;
+}
+.logo-box img{display:block; width:100%; height:100%; object-fit:contain}
+
+.range-ends{
+  display:flex; justify-content:space-between;
+  font-style:normal; font-size:9.5px; color:#6f7889; margin-top:1px;
+}
+
+/* ---------------- Workspace ---------------- */
+
+.workspace{display:flex; flex-direction:column; min-width:0; min-height:0; background:#101216}
+.workspace-bar{
+  height:38px; flex:0 0 38px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 12px; background:var(--panel); border-bottom:1px solid var(--line);
+}
+.zoomctl, .pagectl{display:flex; align-items:center; gap:7px}
+#zoomVal{font-size:11.5px; color:var(--muted); min-width:38px; text-align:center}
+
+.scroll{flex:1 1 auto; min-height:0; overflow:auto; padding:24px; display:flex; justify-content:center}
+.sheets{
+  display:flex; flex-direction:column; align-items:center; gap:24px;
+  transform-origin:top center;
+}
+
+/* ============================================================
+   HOJA A4 + ETIQUETAS
+   ============================================================ */
+
+.sheet{
+  width:210mm; height:297mm;
+  background:#fff; color:#000;
+  position:relative; flex:0 0 auto;
+  box-shadow:0 6px 26px rgba(0,0,0,.55);
+  overflow:hidden;
+}
+
+.sheet-grid{
+  position:absolute; inset:0;
+  padding:var(--mt) var(--mr) var(--mb) var(--ml);
+  display:grid;
+  grid-template-columns:repeat(var(--cols), 1fr);
+  grid-template-rows:repeat(var(--rows), 1fr);
+  column-gap:var(--gx);
+  row-gap:var(--gy);
+}
+
+.label{
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+  display:flex;
+  padding:calc(var(--fs) * .55);
+  cursor:pointer;
+  font-family:"Segoe UI", Arial, Helvetica, sans-serif;
+}
+.label.bordered{border:.25mm solid #000}
+
+/* Estados de la vista previa: solo borde, nunca fondo.
+   La etiqueta siempre queda blanca, igual que impresa. */
+@media screen{
+  .label:hover::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    box-shadow:inset 0 0 0 .5mm rgba(76,141,255,.45);
+  }
+  .label.sel::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    box-shadow:inset 0 0 0 .7mm var(--accent);
+  }
+  /* dentro de la tirada pero todavia sin cargar */
+  .label.todo::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    box-shadow:inset 0 0 0 .4mm #b9c2d4;
+  }
+  /* el contenido no entra: se va a imprimir recortado */
+  .label.clip::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    box-shadow:inset 0 0 0 .5mm #d99a2b;
+  }
+  /* etiqueta incompleta: no deja imprimir. Va al final para que este
+     aviso gane sobre el de recorte cuando se dan los dos a la vez. */
+  .label.bad::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    box-shadow:inset 0 0 0 .5mm #e5544b;
+  }
+  .label .ph{
+    margin:auto; color:#aab3c2; font-size:calc(var(--fs) * .95);
+    font-weight:400; user-select:none; letter-spacing:.2px;
+  }
+  .label.blank .ph{font-size:calc(var(--fs) * 1.4); font-weight:300; color:#ccd3de}
+  /* codigo que no genera barras (checksum/longitud invalidos) */
+  .bc-bad{color:#c0392b; font-weight:700; text-align:center; width:100%}
+}
+@media print{ .label.blank > *, .label.todo > *{visibility:hidden} }
+
+/* marcas de corte */
+.guides{position:absolute; inset:0; pointer-events:none}
+.guides i{position:absolute; background:#000; opacity:.75}
+.guides i.h{height:.2mm; width:3mm}
+.guides i.v{width:.2mm; height:3mm}
+
+/* ---------- Contenido comun ---------- */
+
+.lb-logo{display:block; object-fit:contain; flex:0 0 auto}
+.lb-prod{
+  font-weight:800; line-height:1.12;
+  font-size:calc(var(--fs) * 1.35);
+  overflow:hidden; word-break:break-word;
+}
+.lb-qty{
+  font-weight:700; line-height:1;
+  font-size:calc(var(--fs) * 1.5);
+  white-space:nowrap;
+}
+.lb-qty .u{font-size:.62em; font-weight:600; margin-left:.15em}
+.lb-meta{
+  font-size:calc(var(--fs) * .92); line-height:1.3; color:#111;
+  display:flex; flex-wrap:wrap; gap:0 calc(var(--fs) * .7);
+}
+.lb-meta b{font-weight:700}
+.lb-extra{font-size:calc(var(--fs) * .8); color:#333; line-height:1.25}
+/* El SVG del codigo lleva viewBox + preserveAspectRatio: llena la caja sin deformarse. */
+.lb-bc{display:block; width:100%; height:100%}
+.lb-bcwrap{height:var(--bch); flex:0 0 auto; overflow:hidden}
+
+/* Informacion adicional + codigo de barras.
+   Es el grupo —y no .lb-bcwrap— el que cada diseno posiciona: si el
+   margin-top:auto quedara en las barras, el texto se despegaria hacia
+   arriba en vez de viajar pegado al codigo. */
+.lb-bcgroup{display:flex; flex-direction:column; flex:0 0 auto; min-width:0}
+.lb-bcinfo{
+  font-size:calc(var(--fs) * .6);
+  line-height:1.25; color:#000;
+  overflow:hidden; word-break:break-word;
+  margin-bottom:calc(var(--fs) * .15);
+}
+
+/* ============================================================
+   Posicion del logo
+   El logo va en una caja absoluta cuya medida y posicion se calculan
+   en mm en JS (logoBox), a partir de la proporcion real del archivo.
+   El contenido reserva ese alto arriba o abajo, asi nunca queda tapado.
+   ============================================================ */
+
+.lb-slot{
+  position:absolute;
+  left:var(--logoL); top:var(--logoT);
+  width:var(--logoW); height:var(--logoH);
+  overflow:hidden;
+  z-index:1;
+}
+.lb-slot .lb-logo{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:contain;
+}
+
+.lb-content{
+  flex:1 1 auto; min-width:0; min-height:0;
+  display:flex; flex-direction:column;
+  padding-top:var(--ctPadTop);
+  padding-bottom:var(--ctPadBottom);
+}
+
+/* ---------- Plantilla A: Clasica (vertical) ---------- */
+
+.tpl-a .lb-content{gap:calc(var(--fs) * .3); text-align:center; align-items:center}
+.tpl-a .lb-prod{width:100%; text-transform:uppercase; letter-spacing:.2px}
+.tpl-a .lb-qty{margin-top:calc(var(--fs) * .1)}
+.tpl-a .lb-meta{width:100%; justify-content:center}
+.tpl-a .lb-bcgroup{width:100%; margin-top:auto}
+
+/* ---------- Plantilla B: Compacta ---------- */
+
+.tpl-b .lb-content{gap:calc(var(--fs) * .35)}
+.tpl-b .lb-head{
+  display:flex; align-items:center; gap:calc(var(--fs) * .6);
+  border-bottom:.2mm solid #000; padding-bottom:calc(var(--fs) * .3);
+}
+.tpl-b .lb-prod{flex:1; text-align:right; font-size:calc(var(--fs) * 1.2)}
+.tpl-b .lb-body{display:flex; align-items:center; gap:calc(var(--fs) * .5); flex:1; min-height:0}
+.tpl-b .lb-left{flex:1; min-width:0; display:flex; flex-direction:column; gap:calc(var(--fs) * .25)}
+.tpl-b .lb-meta{flex-direction:column; gap:calc(var(--fs) * .15) 0}
+.tpl-b .lb-bcgroup{flex:0 0 46%; align-self:stretch; justify-content:center}
+.tpl-b .lb-bcwrap{flex:1 1 auto; height:auto; min-height:0}
+
+/* ---------- Plantilla C: Destacada (banda de cantidad) ---------- */
+
+.tpl-c{padding:0}
+.tpl-c .lb-content{gap:calc(var(--fs) * .3)}
+.tpl-c .lb-top{
+  display:flex; align-items:center; justify-content:flex-end;
+  gap:calc(var(--fs) * .5);
+  padding:calc(var(--fs) * .5) calc(var(--fs) * .6) 0;
+}
+.tpl-c .lb-qtybox{
+  background:#000; color:#fff; border-radius:.8mm;
+  padding:calc(var(--fs) * .18) calc(var(--fs) * .5);
+  font-weight:800; font-size:calc(var(--fs) * 1.25); line-height:1.15;
+  white-space:nowrap;
+}
+.tpl-c .lb-qtybox .u{font-size:.65em; margin-left:.15em}
+.tpl-c .lb-prod{padding:0 calc(var(--fs) * .6); text-align:left}
+.tpl-c .lb-meta{padding:0 calc(var(--fs) * .6); display:flex; justify-content:space-between; gap:calc(var(--fs)*.4)}
+.tpl-c .lb-nutri, .tpl-c .nt-nota{margin-left:calc(var(--fs) * .6); margin-right:calc(var(--fs) * .6); width:auto}
+.tpl-c .lb-bcgroup{
+  margin-top:auto; width:100%;
+  padding:calc(var(--fs) * .2) calc(var(--fs) * .6) calc(var(--fs) * .45);
+}
+/* Ese padding vertical vivia dentro de la caja de las barras (border-box).
+   Al mudarlo al grupo se lo descontamos al alto, asi el codigo conserva
+   exactamente el tamano que tenia antes en este diseno. */
+.tpl-c .lb-bcwrap{height:calc(var(--bch) - var(--fs) * .65)}
+
+/* ---------------- Modal ---------------- */
+
+.modal-bg{
+  position:fixed; inset:0; z-index:100;
+  background:rgba(8,9,11,.62);
+  display:none; place-items:center;
+}
+.modal-bg.show{display:grid}
+.modal{
+  width:320px; background:var(--panel);
+  border:1px solid var(--line); border-radius:10px;
+  padding:16px; box-shadow:0 18px 50px rgba(0,0,0,.6);
+}
+.modal.lg{width:560px; max-height:88vh; display:flex; flex-direction:column}
+.modal h4{margin:0 0 12px; font-size:13px; font-weight:600}
+.modal h4 .badge{float:none; margin-left:6px}
+.modal-actions{display:flex; align-items:center; gap:8px; margin-top:10px}
+
+/* --- editor de la tabla nutricional --- */
+
+#nutriBody{overflow-y:auto; min-height:0; padding-right:2px}
+#nutriBody.off{opacity:.45; pointer-events:none}
+
+.nutri-head, .nutri-row{
+  display:grid;
+  grid-template-columns:1fr 86px 62px 52px 26px;
+  gap:6px; align-items:center;
+}
+.nutri-head{
+  font-size:10px; text-transform:uppercase; letter-spacing:.3px;
+  color:var(--muted); margin:4px 0 5px; align-items:end;
+}
+.nutri-head span{line-height:1.15}
+.nutri-row{margin-bottom:5px}
+.nutri-row input{
+  width:100%; background:#14161a; color:var(--txt);
+  border:1px solid var(--line); border-radius:6px;
+  padding:6px 8px; font-size:12px; font-family:inherit;
+}
+.nutri-row input:focus{outline:none; border-color:var(--accent)}
+.nutri-row input.missing{border-color:#7a3a35; background:#221618}
+.nutri-row .x{padding:5px 0; text-align:center; line-height:1; font-size:14px}
+#nutriList{max-height:300px; overflow-y:auto; padding-right:2px}
+
+/* ---------- Tabla nutricional dentro de la etiqueta ---------- */
+
+.lb-nutri{
+  width:100%;
+  border:.18mm solid #000;
+  padding:calc(var(--fs) * .2) calc(var(--fs) * .3);
+  font-size:calc(var(--fs) * .62);
+  line-height:1.22;
+  color:#000;
+  text-align:left;
+  overflow:hidden;
+  flex:0 1 auto;
+  min-height:0;
+}
+.lb-nutri .nt-tit{
+  font-weight:800; text-transform:uppercase;
+  font-size:calc(var(--fs) * .66); letter-spacing:.2px;
+}
+.lb-nutri .nt-por{font-size:calc(var(--fs) * .6)}
+/* Una sola grilla para cabecera y filas, asi las columnas quedan alineadas.
+   Sin column-gap: la separacion va por padding, para que la linea bajo la
+   cabecera salga continua en vez de cortada en cada hueco. */
+.lb-nutri .nt-rows{
+  display:grid;
+  grid-template-columns:1fr minmax(0, max-content) minmax(0, max-content);
+  column-gap:0;
+  border-top:.15mm solid #000;
+  margin-top:calc(var(--fs) * .12);
+  padding-top:calc(var(--fs) * .12);
+}
+.lb-nutri.sin-vd .nt-rows{grid-template-columns:1fr minmax(0, max-content)}
+.lb-nutri .nt-rows > span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.lb-nutri .nt-rows .v, .lb-nutri .nt-rows .vd{
+  text-align:right; font-weight:600;
+  padding-left:calc(var(--fs) * .35);
+}
+.lb-nutri .nt-rows .hd{
+  font-weight:700;
+  font-size:calc(var(--fs) * .55);
+  line-height:1.05;
+  white-space:normal;                 /* la cabecera puede partirse en dos lineas */
+  border-bottom:.12mm solid #000;
+  padding-bottom:calc(var(--fs) * .1);
+  margin-bottom:calc(var(--fs) * .1);
+}
+/* Pie: dentro del recuadro, separado de las filas por una linea.
+   Mas chico que las filas: es una aclaracion, no un dato de la tabla. */
+.lb-nutri .nt-pie{
+  border-top:.15mm solid #000;
+  margin-top:calc(var(--fs) * .14);
+  padding-top:calc(var(--fs) * .14);
+  font-size:calc(var(--fs) * .55);
+  line-height:1.2;
+  white-space:pre-wrap; word-break:break-word;
+}
+
+/* Nota: afuera del recuadro, debajo de la tabla. Sin borde y un punto mas
+   chica que el pie, para que se lea como aclaracion al margen. */
+.nt-nota{
+  width:100%;
+  margin-top:calc(var(--fs) * .18);
+  font-size:calc(var(--fs) * .5);
+  line-height:1.2;
+  color:#000; text-align:left;
+  white-space:pre-wrap; word-break:break-word;
+  flex:0 0 auto;
+}
+
+/* ---------- Lista de ingredientes dentro de la etiqueta ----------
+   Mismo recuadro que la tabla nutricional, para que las dos columnas del
+   diseno "Dos columnas" pesen igual. */
+
+.lb-ingr{
+  width:100%;
+  border:.18mm solid #000;
+  padding:calc(var(--fs) * .2) calc(var(--fs) * .3);
+  font-size:calc(var(--fs) * .62);
+  line-height:1.22;
+  color:#000;
+  text-align:left;
+  overflow:hidden;
+  flex:0 1 auto;
+  min-height:0;
+}
+.lb-ingr .ig-tit{
+  font-weight:800; text-transform:uppercase;
+  font-size:calc(var(--fs) * .66); letter-spacing:.2px;
+  border-bottom:.15mm solid #000;
+  padding-bottom:calc(var(--fs) * .12);
+  margin-bottom:calc(var(--fs) * .12);
+}
+/* pre-wrap: respeta los saltos de linea que se escriban en el campo. */
+.lb-ingr .ig-txt{white-space:pre-wrap; word-break:break-word}
+
+/* ---------- Plantilla D: Logo grande ----------
+   El logo se lleva una banda entera del lado elegido: es lo que mas
+   superficie le da dentro de la etiqueta. flex-shrink activo para que
+   en etiquetas chicas ceda espacio en vez de empujar los datos afuera. */
+
+.tpl-d .lb-content{gap:calc(var(--fs) * .25)}
+.tpl-d .lb-head{
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:calc(var(--fs) * .5);
+}
+/* El nombre comparte fila con la cantidad: sin tope de lineas, un nombre
+   largo se parte tantas veces que empuja el codigo fuera de la etiqueta. */
+.tpl-d .lb-prod{
+  font-size:calc(var(--fs) * 1.1); text-transform:uppercase; min-width:0;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.tpl-d .lb-qty{font-size:calc(var(--fs) * 1.4); white-space:nowrap}
+.tpl-d .lb-bcgroup{margin-top:auto; width:100%}
+
+/* ---------- Plantillas E y F: logo de fondo (marca de agua) ----------
+   Comparten el fondo atenuado y la cabecera centrada. F ademas parte el
+   cuerpo en dos columnas: tabla nutricional / ingredientes. */
+
+.tpl-e, .tpl-f{flex-direction:column}
+/* Va como <img> y no como background-image: asi se imprime siempre,
+   sin depender de la opcion "imprimir fondos" del driver.
+   La posicion mueve la caja de la marca y no `object-position`, porque con
+   object-fit el ajuste interno no corre si la imagen ya llena ese eje (un
+   logo apaisado no se movia con izquierda/derecha). */
+.tpl-e .lb-wm, .tpl-f .lb-wm{
+  position:absolute;
+  object-fit:contain;
+  opacity:var(--wmOpacity);
+  transform:scale(var(--logoScale)); transform-origin:center;
+  pointer-events:none; z-index:0;
+  left:var(--logoL); top:var(--logoT);
+  width:var(--logoW); height:var(--logoH);
+}
+.tpl-e .lb-fg, .tpl-f .lb-fg{
+  position:relative; z-index:1;
+  flex:1; min-height:0; width:100%;
+  display:flex; flex-direction:column; align-items:center;
+  gap:calc(var(--fs) * .3); text-align:center;
+}
+.tpl-e .lb-prod, .tpl-f .lb-prod{width:100%; text-transform:uppercase; letter-spacing:.2px}
+.tpl-e .lb-meta, .tpl-f .lb-meta{width:100%; justify-content:center}
+.tpl-e .lb-bcgroup, .tpl-f .lb-bcgroup{width:100%; margin-top:auto}
+.tpl-e .lb-qty{font-size:calc(var(--fs) * 1.75)}
+/* Mas contenida que en E: las dos columnas necesitan el alto. */
+.tpl-f .lb-qty{font-size:calc(var(--fs) * 1.45)}
+
+/* Cuerpo en dos mitades iguales. `min-width:0` en las columnas para que un
+   texto largo de ingredientes se parta en vez de ensanchar su mitad y
+   desbalancear el 50/50. */
+.tpl-f .lb-cols{
+  display:flex; align-items:stretch;
+  gap:calc(var(--fs) * .4);
+  width:100%; flex:0 1 auto; min-height:0;
+  margin-top:calc(var(--fs) * .1);
+}
+.tpl-f .lb-col{
+  flex:1 1 50%; min-width:0; min-height:0;
+  display:flex; flex-direction:column;
+}
+/* Los dos recuadros llegan al mismo alto: si cada uno se quedara con el alto
+   de su texto, el bloque quedaria desparejo cuando los ingredientes son
+   pocos y la tabla larga. */
+.tpl-f .lb-col > *{flex:1 1 auto}
+/* La nota va fuera del recuadro: no se estira, se queda con su alto. */
+.tpl-f .lb-col > .nt-nota{flex:0 0 auto}
+
+/* ---------------- Toast ---------------- */
+
+.toast{
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:#2b3038; color:var(--txt); border:1px solid var(--line);
+  padding:9px 16px; border-radius:20px; font-size:12.5px;
+  opacity:0; pointer-events:none; transition:opacity .18s, transform .18s;
+  z-index:200;                        /* encima de los modales */
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:var(--danger); color:#ff9c95}
+
+/* ---------------- Google / planilla ---------------- */
+
+.btn.google{max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.btn.google.on::before{
+  content:''; display:inline-block; width:7px; height:7px; border-radius:50%;
+  background:var(--ok); margin-right:7px; vertical-align:1px;
+}
+.modal.md{width:420px}
+.modal a{color:var(--accent)}
+
+/* Sin conexion, las secciones de la planilla se ven pero no se usan. */
+body:not(.cloud-on) .cloud-body{opacity:.4; pointer-events:none}
+body.cloud-on .cloud-msg{display:none}
+
+.lote-img{
+  margin:4px 0 8px; border:1px solid var(--line); border-radius:6px;
+  background:#14161a; min-height:60px; display:grid; place-items:center; overflow:hidden;
+}
+.lote-img img{display:block; max-width:100%; max-height:180px; cursor:zoom-in}
+.lote-img.loading::after{content:'Cargando imagen…'; color:var(--muted); font-size:11px; padding:20px}
+.lote-img[hidden]{display:none}
+
+/* ============================================================
+   IMPRESION
+   ============================================================ */
+
+@page{ size:A4; margin:0 }
+
+@media print{
+  html,body{height:auto; overflow:visible; background:#fff; display:block}
+  .no-print, .topbar, .panel, .workspace-bar{display:none !important}
+  .layout{display:block; height:auto; min-height:0}
+  .workspace{display:block; background:#fff}
+  .scroll{overflow:visible; padding:0; display:block; min-height:0}
+  .sheets{display:block; zoom:1 !important; transform:none !important; gap:0}
+  .sheet{
+    box-shadow:none; margin:0;
+    width:210mm; height:297mm;
+    page-break-after:always; break-after:page;
+  }
+  .sheet:last-child{page-break-after:auto; break-after:auto}
+  .label{cursor:default}
+  .label.sel::after, .label:hover::after{display:none}
+}
