@@ -51,12 +51,55 @@ solo hace falta para abrir la app a cualquier cuenta.
 
 ### 3. Crear la planilla del equipo
 
-1. Entrar al sitio y tocar **Conectar con Google**.
-2. En la ventana *Planilla de Google*, **Crear planilla nueva**. La app arma las pestañas.
-3. Abrir la planilla (el enlace aparece en esa misma ventana) y compartirla con el equipo
-   con permiso de **Editor**.
+1. Entrar al sitio y tocar **Iniciar sesión con Google**.
+2. En la ventana *Planilla de Google*, **Crear planilla nueva**. La app arma las pestañas
+   y anota a quien la creó como **administrador** en la pestaña `Usuarios`.
+3. Instalar el script de permisos (ver abajo). Desde ese momento, para dar acceso a alguien
+   alcanza con agregar su mail en la pestaña `Usuarios`: no hace falta compartir la planilla
+   a mano.
 4. Opcional: pegar el ID de la planilla en `config.js` (`spreadsheetId`) para que el resto
    del equipo entre directo, sin tener que pegar la URL la primera vez.
+
+### 4. Quién puede entrar: la pestaña Usuarios
+
+La app solo deja entrar a las cuentas de la pestaña `Usuarios`:
+
+| email | nombre | rol | activo |
+|---|---|---|---|
+| ana@gmail.com | Ana | admin | SI |
+| juan@gmail.com | Juan | usuario | |
+| ex.empleado@gmail.com | Pedro | usuario | NO |
+
+- **activo** vacío o `SI` habilita; `NO` deshabilita sin borrar la fila.
+- **rol** `admin` puede editar la pestaña `Usuarios`; cualquier otro valor es un usuario común.
+- Una cuenta que se quita o se pasa a `NO` queda afuera la próxima vez que la app relee la
+  planilla (al volver a la pestaña o al recargar).
+
+Ese control lo hace la app en el navegador, y se puede saltear modificando la página. Lo
+que protege los datos de verdad es **con quién está compartida la planilla**. Para que la
+pestaña `Usuarios` mande también sobre eso, hay que instalar el script
+[`apps-script/usuarios.gs`](apps-script/usuarios.gs). Cada 5 minutos, y en cada cambio
+hecho a mano en la planilla:
+
+- comparte la planilla como **Editor** con las cuentas activas y se la quita a las demás;
+- deja la pestaña `Usuarios` editable solo por los administradores.
+
+Instalación (la hace el dueño de la planilla, una sola vez):
+
+1. En la planilla: **Extensiones → Apps Script**.
+2. Borrar lo que haya en el editor, pegar el contenido de `apps-script/usuarios.gs` y
+   guardar (ícono de disquete).
+3. Arriba, elegir la función **instalar** y tocar **Ejecutar**. Google pide autorizar el
+   acceso a la planilla y a Drive (para poder compartirla): aceptar.
+
+> El script quita a cualquier editor que no figure en la lista, aunque se haya agregado a
+> mano desde *Compartir*. Los lectores y comentadores no se tocan. El dueño de la planilla
+> nunca pierde el acceso.
+
+Como las cuentas se agregan desde la planilla, conviene publicar la app en Google Cloud
+(*Google Auth Platform → Público → Publicar app*) en lugar de cargar cada mail también como
+usuario de prueba. Sin la verificación de Google, la pantalla de login sigue mostrando el
+aviso de "app no verificada" y admite hasta 100 cuentas.
 
 ### Migrar las plantillas de la versión de escritorio
 
@@ -78,7 +121,7 @@ y abrir `http://localhost:8080` (tiene que estar entre los orígenes autorizados
 
 ## La planilla
 
-La app crea cuatro pestañas y encuentra cada columna por el nombre de la fila 1, así que se
+La app crea cinco pestañas y encuentra cada columna por el nombre de la fila 1, así que se
 pueden reordenar columnas o agregar columnas propias. Si falta una pestaña o una columna,
 la app la agrega sola al conectarse.
 
@@ -88,6 +131,7 @@ la app la agrega sola al conectarse.
 | `Plantillas` | plantilla | id, nombre, producto, cantidad, unidad, codigo, ingredientes, infoExtra, nutri, diseno, actualizado, por |
 | `Lotes` | lote | lote, codigo, producto, vencimiento, imagen, archivo, actualizado, por |
 | `Imagenes` | imagen de lote | id, tipo, datos (columnas C a Z) |
+| `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 
 - `nutri` es la tabla nutricional en formato JSON. Conviene editarla desde la app.
 - `actualizado` y `por` se completan solos con la fecha y el mail de quien guardó.
@@ -264,6 +308,7 @@ config.js                    ID de cliente de Google y planilla por defecto
 google.js                    login de Google y acceso a la Sheets API
 cloud.js                     catálogo, plantillas y lotes contra la planilla
 browser-api.js               archivos, impresión y configuración local del navegador
+apps-script/usuarios.gs      script de la planilla: permisos según la pestaña Usuarios
 assets/logo-default.svg      logo por defecto
 vendor/JsBarcode.all.min.js
 ```

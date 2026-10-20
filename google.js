@@ -23,7 +23,12 @@ const TABS = {
   /* Las imagenes van partidas en trozos de texto (base64) desde la columna C:
      una celda admite hasta 50.000 caracteres. Asi el acceso a las imagenes es
      el mismo que a la planilla, sin pedir permisos sobre Google Drive. */
-  Imagenes:   ['id', 'tipo', 'datos']
+  Imagenes:   ['id', 'tipo', 'datos'],
+  /* Cuentas habilitadas para usar la app. `rol`: admin o usuario.
+     `activo`: vacio o SI habilita; NO deshabilita sin borrar la fila.
+     El script de apps-script/usuarios.gs sincroniza esta lista con los
+     permisos reales de la planilla. */
+  Usuarios:   ['email', 'nombre', 'rol', 'activo', 'actualizado', 'por']
 };
 
 /* Columnas con formato de texto: sin esto, un codigo cargado a mano en la

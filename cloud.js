@@ -13,6 +13,7 @@ const cloud = {
   catalog: [],        // { codigo, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri }
   lotes: [],          // { lote, codigo, producto, vencimiento, imagen, archivo, actualizado, por }
   loaded: 0,          // momento de la ultima carga completa
+  rol: '',            // rol de la cuenta conectada en la pestana Usuarios
   busy: false
 };
 const imgCache = new Map();          // id de imagen -> data URL
@@ -88,13 +89,51 @@ const loteFromRow = (r) => ({
   actualizado: r.actualizado || '', por: r.por || ''
 });
 
+/* ---------------- Acceso ---------------- */
+
+/* Vacio cuenta como activo: alcanza con escribir el email para habilitar. */
+const esActivo = (v) => !['no', 'n', 'false', '0', 'inactivo'].includes(String(v || '').trim().toLowerCase());
+
+function accessDenied(msg) {
+  const err = new Error(msg);
+  err.denied = true;
+  return err;
+}
+
+/* Revisa que la cuenta conectada figure activa en la pestana Usuarios y
+   devuelve su rol. Si la lista esta vacia (planilla recien creada) quien la
+   abre queda como administrador: si no, nadie podria entrar nunca.
+   Este control es de la app; el que protege los datos de verdad son los
+   permisos de la planilla, que mantiene apps-script/usuarios.gs. */
+async function checkAccess(rows) {
+  const lista = rows.filter((r) => String(r.email || '').trim());
+  const yo = G.email.toLowerCase();
+  if (!lista.length) {
+    await gUpsert('Usuarios', 'email', { email: G.email, rol: 'admin', activo: 'SI' });
+    return 'admin';
+  }
+  const fila = lista.find((r) => String(r.email).trim().toLowerCase() === yo);
+  if (!fila) throw accessDenied(`La cuenta ${G.email} no esta habilitada para usar EtiquetApp. Pedile a un administrador que la agregue en la pestana Usuarios de la planilla.`);
+  if (!esActivo(fila.activo)) throw accessDenied(`La cuenta ${G.email} esta deshabilitada en la pestana Usuarios de la planilla.`);
+  return String(fila.rol || '').trim().toLowerCase() === 'admin' ? 'admin' : 'usuario';
+}
+
+/* Sin acceso se cierra la sesion de Google y se vuelve a la pantalla de
+   ingreso con el motivo. */
+function handleDenied(err) {
+  gSignOut();
+  cloudClear();
+  syncCloudUI(err.message);
+}
+
 /* ---------------- Conexion ---------------- */
 
 async function cloudLoadAll() {
-  await gEnsureToken();               // una sola renovacion para las tres lecturas
-  const [cat, tpl, lot] = await Promise.all([
-    gReadTab('Catalogo'), gReadTab('Plantillas'), gReadTab('Lotes')
+  await gEnsureToken();               // una sola renovacion para todas las lecturas
+  const [usu, cat, tpl, lot] = await Promise.all([
+    gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Plantillas'), gReadTab('Lotes')
   ]);
+  cloud.rol = await checkAccess(usu.rows);
   cloud.catalog = cat.rows.filter((r) => String(r.codigo || '').trim()).map(catFromRow);
   // Las plantillas se identifican por id: una fila cargada a mano sin id se ignora.
   state.templates = tpl.rows.filter((r) => String(r.id || '').trim()).map(tplFromRow);
@@ -110,62 +149,106 @@ async function cloudLoadAll() {
 async function cloudOpen(id) {
   try {
     await gOpenSpreadsheet(id);
+    await cloudLoadAll();
   } catch (err) {
-    G.sheet = null;
+    if (err.denied) handleDenied(err);
+    else { G.sheet = null; syncCloudUI(); }
     throw err;
   }
   rememberSheetId(id);
-  await cloudLoadAll();
   syncCloudUI();
+}
+
+/* Recarga los datos y vuelve a revisar el acceso: si un administrador quito
+   la cuenta mientras la app estaba abierta, la saca. */
+async function cloudRefresh() {
+  try {
+    await cloudLoadAll();
+    return true;
+  } catch (err) {
+    if (err.denied) handleDenied(err);
+    else toast(err.message || String(err), true);
+    return false;
+  }
 }
 
 function cloudClear() {
   state.templates = [];
   cloud.catalog = [];
   cloud.lotes = [];
+  cloud.rol = '';
   imgCache.clear();
   refreshTemplateList();
   refreshCatalogUI();
   refreshLoteUI();
 }
 
-function syncCloudUI() {
+/* `msg` se muestra en la pantalla de ingreso: un error (por ejemplo, por que
+   se rechazo la cuenta) o, con `info`, un aviso de progreso. */
+function syncCloudUI(msg, info = false) {
   const on = cloudReady();
   document.body.classList.toggle('cloud-on', on);
   const b = $('btnGoogle');
   b.classList.toggle('on', on);
   b.textContent = on ? (G.email || 'Conectado') : G.token ? 'Elegir planilla' : 'Conectar con Google';
   b.title = on ? `Planilla: ${G.sheet.title}` : 'Guardar catalogo, plantillas y lotes en Google Sheets';
+
+  const gl = $('gateLogin');
+  gl.textContent = G.token ? 'Elegir planilla' : 'Iniciar sesion con Google';
+  gl.disabled = !gConfigured();
+  const gm = $('gateMsg');
+  if (!gConfigured()) gm.textContent = 'Falta configurar el ID de cliente de Google en config.js.';
+  else if (msg !== undefined) {
+    gm.textContent = msg;
+    gm.classList.toggle('info', info);
+  }
 }
 
+/* El error se muestra en la pantalla de ingreso, que es lo que se ve
+   mientras no hay una cuenta habilitada conectada. */
 async function onGoogleClick() {
   if (G.token) return openGModal();
-  await cloudTask(null, async () => {
+  $('gateLogin').disabled = true;
+  syncCloudUI('Conectando…', true);
+  let msg = '';
+  try {
     await gSignIn();
     const id = savedSheetId();
     if (id) {
       await cloudOpen(id);
       toast(`Conectado a "${G.sheet.title}"`);
     }
-  });
-  syncCloudUI();
+  } catch (err) {
+    msg = err.message || String(err);
+  }
+  syncCloudUI(msg);
   // Sin planilla (o si la recordada ya no se puede abrir) se ofrece elegir otra.
   if (G.token && !G.sheet) openGModal();
 }
 
 /* ---------------- Modal de la planilla ---------------- */
 
+function sheetLink(text, href) {
+  const a = el('a', null, text);
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  return a;
+}
+
 function openGModal() {
-  $('gWho').textContent = G.email ? `Conectado como ${G.email}` : 'Conectado con Google';
+  $('gWho').textContent = (G.email ? `Conectado como ${G.email}` : 'Conectado con Google') +
+    (cloud.rol === 'admin' ? ' · administrador' : cloud.rol ? ' · usuario' : '');
   const cur = $('gCurrent');
   cur.innerHTML = '';
   if (G.sheet) {
     cur.append('Planilla actual: ');
-    const a = el('a', null, G.sheet.title);
-    a.href = gSheetUrl();
-    a.target = '_blank';
-    a.rel = 'noopener';
-    cur.appendChild(a);
+    cur.appendChild(sheetLink(G.sheet.title, gSheetUrl()));
+    // Los administradores manejan las cuentas habilitadas desde la planilla.
+    if (cloud.rol === 'admin' && 'Usuarios' in G.sheet.tabs) {
+      cur.append(' · ');
+      cur.appendChild(sheetLink('Administrar usuarios', `${gSheetUrl()}#gid=${G.sheet.tabs.Usuarios}`));
+    }
   } else {
     cur.textContent = 'Todavia no hay una planilla elegida. Pegá la URL de la planilla del equipo o creá una nueva.';
   }
@@ -181,6 +264,7 @@ async function useSheetFromInput() {
   const id = gParseSheetId($('gSheetInput').value);
   if (!id) { $('gErr').textContent = 'Pegá la URL de la planilla (docs.google.com/spreadsheets/d/…) o su ID.'; return; }
   const ok = await cloudTask('Abriendo planilla…', async () => { await cloudOpen(id); return true; });
+  if (!G.token) return closeGModal();      // cuenta rechazada: queda la pantalla de ingreso
   if (!ok) return;
   closeGModal();
   toast(`Conectado a "${G.sheet.title}"`);
@@ -520,13 +604,16 @@ function bindCloudEvents() {
   $('gSheetInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') useSheetFromInput(); });
   $('gCreate').addEventListener('click', createSheet);
   $('gReload').addEventListener('click', async () => {
-    const ok = await cloudTask('Actualizando…', async () => { await cloudLoadAll(); return true; });
-    if (ok) toast('Datos actualizados desde la planilla');
+    if (cloud.busy) return toast('Esperá a que termine la operacion anterior.', true);
+    toast('Actualizando…');
+    const ok = await cloudRefresh();
+    if (!G.token) closeGModal();
+    else if (ok) toast('Datos actualizados desde la planilla');
   });
   $('gLogout').addEventListener('click', () => {
     gSignOut();
     cloudClear();
-    syncCloudUI();
+    syncCloudUI('');
     closeGModal();
     toast('Desconectado de Google');
   });
@@ -568,20 +655,24 @@ function bindCloudEvents() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible' || !cloudReady() || !gConnected()) return;
     if (cloud.busy || Date.now() - cloud.loaded < 60000) return;
-    cloudLoadAll().catch(() => { /* se reintenta en la proxima vuelta */ });
+    cloudRefresh();
   });
+
+  $('gateLogin').addEventListener('click', onGoogleClick);
 }
 
 async function cloudInit() {
   bindCloudEvents();
-  syncCloudUI();
+  syncCloudUI('');
   refreshCatalogUI();
   refreshLoteUI();
   if (!gRestoreSession()) return;
 
   const id = savedSheetId();
+  let msg = '';
   if (id) {
-    await cloudTask(null, () => cloudOpen(id));
+    syncCloudUI('Conectando…', true);
+    try { await cloudOpen(id); } catch (err) { msg = err.message || String(err); }
   }
-  syncCloudUI();
+  syncCloudUI(msg);
 }
