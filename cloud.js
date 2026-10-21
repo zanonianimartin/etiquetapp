@@ -592,10 +592,16 @@ async function createProduct() {
    el producto no tiene la clave guardada, se saca del codigo de barras. */
 function applyCatalog(c) {
   const clave = c.clave || decimalATexto(c.codigo);
+  /* El vencimiento es el de la bolsa del producto: al pasar a otro producto
+     se borra, para no imprimir el de una bolsa que no corresponde. Volver a
+     elegir el mismo producto lo conserva. */
+  const antes = String(currentLabel().codigo || '');
+  const otroProducto = antes !== '' && antes !== String(c.codigo);
   applyPatch({
     producto: c.producto, cantidad: c.cantidad, unidad: c.unidad, codigo: c.codigo,
     ingredientes: c.ingredientes, infoExtra: c.infoExtra, nutri: cloneNutri(c.nutri),
-    ...(clave ? { lote: generarLote(clave) } : {})
+    ...(clave ? { lote: generarLote(clave) } : {}),
+    ...(otroProducto ? { venc: '' } : {})
   });
   if (c.tipo && BARCODE_RULES[c.tipo] && c.tipo !== state.cfg.barcodeType) {
     state.cfg.barcodeType = c.tipo;
@@ -605,9 +611,12 @@ function applyCatalog(c) {
   }
   renderSheets();
   fillForm();
+  // El aviso dice lo que realmente falta: el vencimiento puede estar cargado.
+  const venc = String(currentLabel().venc || '').trim();
+  const sobreVenc = venc ? `vence ${venc}` : 'falta el vencimiento: tildá la bolsa usada';
   toast(clave
-    ? `"${c.producto}" cargado · lote ${generarLote(clave)} · falta el vencimiento (elegí la bolsa usada)`
-    : `"${c.producto}" cargado del catalogo · este producto no tiene clave: no se pudo generar el lote`, !clave);
+    ? `"${c.producto}" cargado · lote ${generarLote(clave)} · ${sobreVenc}`
+    : `"${c.producto}" cargado · este producto no tiene clave: escribí el lote a mano · ${sobreVenc}`, !clave);
 }
 
 async function saveToCatalog() {
