@@ -258,8 +258,12 @@ cargado en la etiqueta. *Guardar etiqueta actual en el catálogo* actualiza un p
 ya existe con lo que tenga la etiqueta (por ejemplo, una tabla nutricional nueva), sin
 tocar su clave.
 
-Elegir un producto desde el buscador —por clave, código o nombre— completa todo **menos el
-lote y el vencimiento**. El campo *Código de barras* de la etiqueta es de **solo lectura**:
+Elegir un producto desde el buscador completa todo **menos el lote y el vencimiento**. El
+buscador muestra una lista propia (no el desplegable del navegador, que en los celulares casi
+no funciona): se abre al tocar el campo y se filtra mientras se escribe, sin distinguir
+mayúsculas ni acentos ("pimenton" encuentra "Pimentón"), por nombre, presentación, código o
+clave. Cada resultado muestra el nombre, la cantidad y unidad y el código; la clave no se
+muestra. Se elige tocándolo, o con las flechas y Enter. El campo *Código de barras* de la etiqueta es de **solo lectura**:
 el código sale siempre del producto del catálogo (o de *Nuevo producto*).
 
 **Los cambios se guardan solos.** Una etiqueta cuyo código está en el catálogo queda

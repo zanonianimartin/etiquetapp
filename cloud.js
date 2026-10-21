@@ -359,18 +359,75 @@ async function cloudImportTemplates(list) {
 /* ---------------- Catalogo de codigos ---------------- */
 
 function refreshCatalogUI() {
-  const dl = $('catList');
-  dl.innerHTML = '';
-  cloud.catalog.forEach((c) => {
-    const o = document.createElement('option');
-    // El navegador muestra el codigo (value) y al lado el label. La clave no
-    // se muestra, pero se puede seguir buscando por ella (ver findCatalog).
-    o.value = c.codigo;
-    o.label = [c.producto, [c.cantidad, c.unidad].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
-    dl.appendChild(o);
-  });
+  if (!$('catResults').hidden) renderCatResults();
   $('catCount').textContent = cloudReady() ? `${cloud.catalog.length} productos` : '—';
   if (!syncPending) paintCatLink();
+}
+
+/* ---------------- Buscador de productos ---------------- */
+
+/* Lista de resultados propia en lugar de <datalist>, que en los celulares
+   no muestra sugerencias o no busca por nombre. Se busca sin distinguir
+   mayusculas ni acentos ("pimenton" encuentra "Pimentón"), por nombre,
+   codigo o clave; la clave no se muestra. */
+const CAT_MAX = 40;
+let catActive = -1;               // resultado resaltado con las flechas
+let catShown = [];                // productos de la lista visible
+
+const normalizar = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const presentacion = (c) => [c.cantidad, c.unidad].filter(Boolean).join(' ');
+
+function searchCatalog(text) {
+  const palabras = normalizar(text).split(/\s+/).filter(Boolean);
+  const lista = cloud.catalog.filter((c) => {
+    const donde = normalizar(`${c.producto} ${presentacion(c)} ${c.codigo} ${c.clave}`);
+    return palabras.every((p) => donde.includes(p));
+  });
+  return lista.sort((a, b) => a.producto.localeCompare(b.producto, 'es') || Number(a.cantidad) - Number(b.cantidad));
+}
+
+function renderCatResults() {
+  const box = $('catResults');
+  box.innerHTML = '';
+  catShown = searchCatalog($('catSearch').value);
+  catActive = Math.min(catActive, catShown.length - 1);
+  if (!catShown.length) {
+    box.appendChild(el('div', 'cat-empty', cloud.catalog.length ? 'Ningun producto coincide.' : 'El catalogo esta vacio.'));
+  }
+  catShown.slice(0, CAT_MAX).forEach((c, i) => {
+    const it = el('div', 'cat-item' + (i === catActive ? ' on' : ''));
+    it.setAttribute('role', 'option');
+    const fila = el('div', 'cat-prod');
+    fila.appendChild(el('b', null, c.producto));
+    const pres = presentacion(c);
+    if (pres) fila.appendChild(el('span', null, pres));
+    it.appendChild(fila);
+    it.appendChild(el('div', 'cat-code', c.codigo));
+    /* Se elige con click (en el celular no llega si el dedo se arrastro para
+       desplazar la lista). El preventDefault de pointerdown evita que el
+       campo pierda el foco y cierre la lista antes de ese click. */
+    it.addEventListener('pointerdown', (e) => e.preventDefault());
+    it.addEventListener('click', () => pickCatResult(c));
+    box.appendChild(it);
+  });
+  if (catShown.length > CAT_MAX) {
+    box.appendChild(el('div', 'cat-empty', `… y ${catShown.length - CAT_MAX} mas: escribí para filtrar.`));
+  }
+  box.hidden = false;
+  $('catSearch').setAttribute('aria-expanded', 'true');
+}
+
+function closeCatResults() {
+  $('catResults').hidden = true;
+  $('catSearch').setAttribute('aria-expanded', 'false');
+  catActive = -1;
+}
+
+function pickCatResult(c) {
+  $('catSearch').value = c.codigo;
+  closeCatResults();
+  $('catSearch').blur();          // en el celular, baja el teclado
+  applyCatalog(c);
 }
 
 /* Busca por codigo, por clave (respetando mayusculas: "sal1k" y "SAL1K" son
@@ -851,9 +908,42 @@ function bindCloudEvents() {
     if (!c) return toast('Ese codigo no esta en el catalogo.', true);
     applyCatalog(c);
   };
-  $('btnCatApply').addEventListener('click', aplicarBusqueda);
-  $('catSearch').addEventListener('keydown', (e) => { if (e.key === 'Enter') aplicarBusqueda(); });
+  $('btnCatApply').addEventListener('click', () => { closeCatResults(); aplicarBusqueda(); });
   $('btnCatSave').addEventListener('click', saveToCatalog);
+
+  /* Buscador: la lista se abre al tocar el campo y se filtra al escribir.
+     Flechas para moverse; Enter elige el resaltado (o el unico resultado, o
+     lo escrito si es un codigo, clave o nombre exacto). */
+  const cs = $('catSearch');
+  cs.addEventListener('focus', () => { catActive = -1; renderCatResults(); });
+  cs.addEventListener('input', () => {
+    catActive = -1;
+    const exacto = cloud.catalog.find((x) => x.codigo === cs.value.trim());
+    if (exacto) return pickCatResult(exacto);   // pegaron o escribieron el codigo completo
+    renderCatResults();
+  });
+  cs.addEventListener('blur', () => setTimeout(closeCatResults, 120));
+  cs.addEventListener('keydown', (e) => {
+    const abierta = !$('catResults').hidden;
+    const n = Math.min(catShown.length, CAT_MAX);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!abierta) return renderCatResults();
+      if (!n) return;
+      catActive = e.key === 'ArrowDown' ? (catActive + 1) % n : (catActive - 1 + n) % n;
+      renderCatResults();
+      const on = $('catResults').querySelector('.cat-item.on');
+      if (on) on.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (abierta && catActive >= 0 && catShown[catActive]) return pickCatResult(catShown[catActive]);
+      if (abierta && catShown.length === 1) return pickCatResult(catShown[0]);
+      closeCatResults();
+      aplicarBusqueda();
+    } else if (e.key === 'Escape') {
+      closeCatResults();
+    }
+  });
   $('btnCatDelete').addEventListener('click', deleteFromCatalog);
 
   /* --- nuevo producto --- */
@@ -865,25 +955,6 @@ function bindCloudEvents() {
   $('prodModal').addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeProdModal();
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') createProduct();
-  });
-
-  /* Elegir un producto de la lista del buscador completa todo menos lote y
-     vencimiento sin tener que tocar Aplicar. El navegador avisa la eleccion
-     con `input`; escribir el codigo completo a mano tambien cuenta. Si la
-     etiqueta ya tiene esos datos no hace nada, asi no se repite el aviso.
-     El campo Codigo de barras de la etiqueta es de solo lectura: este es el
-     unico camino para cambiarlo. */
-  const autoAplicar = (input) => {
-    const c = cloud.catalog.find((x) => x.codigo === input.value.trim());
-    if (!c) return;
-    const l = currentLabel();
-    const igual = ['producto', 'cantidad', 'unidad', 'codigo', 'ingredientes', 'infoExtra']
-      .every((k) => String(l[k] || '') === String(c[k] || ''))
-      && JSON.stringify(cloneNutri(l.nutri)) === JSON.stringify(cloneNutri(c.nutri));
-    if (!igual) applyCatalog(c);
-  };
-  ['input', 'change'].forEach((ev) => {
-    $('catSearch').addEventListener(ev, () => autoAplicar($('catSearch')));
   });
 
   /* --- lotes --- */

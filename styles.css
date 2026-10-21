@@ -639,6 +639,24 @@ details.adv summary:hover{color:var(--txt)}
 .prod-bc .muted{color:#6b7280; text-align:center}
 #btnProdNew{margin:0 0 12px}
 
+/* Buscador de productos: lista de resultados debajo del campo. */
+.cat-search{position:relative}
+.cat-results{
+  position:absolute; left:0; right:0; top:100%; z-index:30; margin-top:4px;
+  max-height:300px; overflow-y:auto; overscroll-behavior:contain;
+  background:#14161a; border:1px solid var(--line); border-radius:6px;
+  box-shadow:0 12px 30px rgba(0,0,0,.5);
+}
+.cat-results[hidden]{display:none}
+.cat-item{padding:8px 10px; cursor:pointer; border-bottom:1px solid #22262e; min-height:44px}
+.cat-item:last-child{border-bottom:0}
+.cat-item:hover, .cat-item.on{background:#1c2431}
+.cat-prod{display:flex; justify-content:space-between; gap:8px; font-size:12.5px}
+.cat-prod b{font-weight:600}
+.cat-prod span{color:var(--muted); white-space:nowrap}
+.cat-code{font-size:10.5px; color:#7e8798; font-family:Consolas, monospace; margin-top:2px}
+.cat-empty{padding:10px; font-size:11.5px; color:var(--muted)}
+
 /* Estado del producto vinculado a la etiqueta seleccionada. */
 .hint.link:empty{display:none}
 .hint.link{border-left:2px solid var(--accent); padding-left:8px}

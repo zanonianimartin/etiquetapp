@@ -193,11 +193,15 @@
       <p class="hint cloud-msg">Conectate con Google para usar el catalogo compartido.</p>
       <div class="cloud-body">
         <button id="btnProdNew" class="btn primary small wide">Nuevo producto…</button>
-        <label class="field">
-          <span>Clave, codigo o producto</span>
-          <input type="text" id="catSearch" list="catList" placeholder="sal1k" maxlength="80">
-        </label>
-        <datalist id="catList"></datalist>
+        <!-- Lista de resultados propia (no <datalist>): el datalist casi no
+             funciona en celulares. La arma renderCatResults en cloud.js. -->
+        <div class="field cat-search">
+          <span>Buscar producto</span>
+          <input type="text" id="catSearch" placeholder="Nombre o codigo" maxlength="80"
+                 autocomplete="off" spellcheck="false" role="combobox" aria-label="Buscar producto"
+                 aria-expanded="false" aria-controls="catResults" aria-autocomplete="list">
+          <div class="cat-results" id="catResults" role="listbox" hidden></div>
+        </div>
         <p class="hint link" id="catLink"></p>
         <div class="row2">
           <button id="btnCatApply" class="btn small">Aplicar</button>
@@ -206,8 +210,7 @@
         <button id="btnCatSave" class="btn ghost small wide">Guardar etiqueta actual en el catalogo</button>
         <p class="hint">Cada producto tiene una <b>clave de 5 caracteres</b>; su codigo de barras
           sale de ella (igual que <code>=TEXTO_A_DECIMAL()</code> en la planilla). Elegir un
-          producto completa <b>todo menos el lote y el vencimiento</b>. Tambien se aplica al
-          elegir un codigo del catalogo en el campo <b>Codigo de barras</b>.</p>
+          producto de la lista completa <b>todo menos el lote y el vencimiento</b>.</p>
       </div>
     </section>
 
