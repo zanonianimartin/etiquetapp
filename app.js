@@ -1262,33 +1262,7 @@ function bindEvents() {
     setZoom(state.zoom + (e.deltaY < 0 ? 0.08 : -0.08));
   }, { passive: false });
 
-  /* --- proyecto / salida --- */
-  $('btnSave').addEventListener('click', async () => {
-    const ok = await window.api.saveProject({
-      version: 2, cfg: state.cfg, logo: state.logo,
-      items: state.items, qty: state.qty
-    });
-    if (ok) toast('Proyecto guardado');
-  });
-
-  $('btnOpen').addEventListener('click', async () => {
-    const data = await window.api.openProject();
-    if (!data) return;
-    state.cfg = { ...state.cfg, ...(data.cfg || {}), template: DESIGN };
-    // Igual que en init: una ruta al logo de fabrica (de esta version o de la
-    // de escritorio) se reemplaza por el de fabrica actual.
-    state.logo = data.logo && String(data.logo).startsWith('data:') ? data.logo : DEFAULT_LOGO;
-    const items = Array.isArray(data.items) ? data.items : [];
-    state.items = items.length ? items.map(cloneLabel) : [emptyLabel()];
-    state.qty = Math.min(state.items.length, Math.max(1, data.qty || state.items.length));
-    state.sel = 0;
-    bcCache.clear();
-    medirLogo(state.logo, renderSheets);
-    buildDesignPicker(); syncControls();
-    renderSheets(); fillForm(); persist();
-    toast('Proyecto abierto');
-  });
-
+  /* --- salida --- */
   $('btnPrint').addEventListener('click', async () => {
     const r = refreshPrintState();
     if (!r.ok) return toast('No se puede imprimir. ' + r.msg, true);
@@ -1314,7 +1288,6 @@ function bindEvents() {
     if (document.querySelector('.modal-bg.show')) return;
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') { e.preventDefault(); $('btnPrint').click(); }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); $('btnSave').click(); }
     if (typing) return;
 
     const move = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: state.cfg.cols, ArrowUp: -state.cfg.cols }[e.key];

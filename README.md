@@ -330,8 +330,7 @@ Valida largo y dígito verificador, y cuando está mal indica cuál debería ser
 
 **Salida.** *Imprimir* abre el diálogo de impresión del navegador. *Exportar PDF* abre el
 mismo diálogo: hay que elegir **Guardar como PDF** como destino. En ambos casos conviene
-dejar los márgenes en *Ninguno* y la escala en 100 % si el navegador los ofrece. *Guardar*
-descarga el proyecto como `etiquetas.etq.json` y *Abrir* lo vuelve a cargar.
+dejar los márgenes en *Ninguno* y la escala en 100 % si el navegador los ofrece.
 
 ## Estructura
 
@@ -356,7 +355,6 @@ se ve en pantalla es lo que sale impreso.
 | Atajo | Acción |
 |---|---|
 | `Ctrl` + `P` | Imprimir |
-| `Ctrl` + `S` | Guardar proyecto |
 | Flechas | Mover la selección de etiqueta |
 | Rueda del mouse | Ajustar un campo numérico (hay que hacer clic en el campo primero) |
 | `Shift` + rueda | Igual, pero de a 10 |

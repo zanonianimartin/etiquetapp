@@ -31,17 +31,6 @@ function readAsDataURL(file) {
   });
 }
 
-function downloadFile(name, content, mime) {
-  const url = URL.createObjectURL(new Blob([content], { type: mime }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 let quotaWarned = false;
 
 window.api = {
@@ -78,22 +67,6 @@ window.api = {
         toast('El logo es muy pesado para recordarlo en este navegador: al recargar vuelve el de fabrica.', true);
       }
       return false;
-    }
-  },
-
-  async saveProject(data) {
-    downloadFile('etiquetas.etq.json', JSON.stringify(data, null, 2), 'application/json');
-    return true;
-  },
-
-  async openProject() {
-    const file = await pickFile('.json,application/json');
-    if (!file) return null;
-    try {
-      return JSON.parse(await file.text());
-    } catch {
-      toast('El archivo no es un proyecto valido.', true);
-      return null;
     }
   },
 
