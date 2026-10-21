@@ -146,7 +146,18 @@ async function gEnsureToken() {
 /* `what` nombra el recurso en el mensaje ("la planilla", "la imagen"…). */
 function gErrorText(status, body, what) {
   const msg = body && body.error && body.error.message;
-  if (status === 403) return `Tu cuenta no tiene permiso de edicion sobre ${what}.`;
+  /* Google responde 403 por motivos muy distintos; el detalle viene en el
+     cuerpo. Los dos que dependen de la configuracion, y no de la cuenta, se
+     explican aparte. */
+  const detalle = JSON.stringify((body && body.error) || {});
+  if (/SERVICE_DISABLED|accessNotConfigured|has not been used in project/.test(detalle)) {
+    const api = /drive/i.test(detalle) ? 'Google Drive API' : /sheets/i.test(detalle) ? 'Google Sheets API' : 'API';
+    return `La ${api} no esta habilitada en el proyecto de Google Cloud. Habilitala en APIs y servicios → Biblioteca y probá de nuevo en unos minutos.`;
+  }
+  if (/ACCESS_TOKEN_SCOPE_INSUFFICIENT|insufficientPermissions|insufficient authentication scopes/i.test(detalle)) {
+    return 'A tu sesion le falta el permiso de Google Drive. Tocá Desconectar, volvé a entrar y tildá el permiso de Drive en la pantalla de Google.';
+  }
+  if (status === 403) return `Tu cuenta no tiene permiso de edicion sobre ${what}.` + (msg ? ` (Google: ${msg})` : '');
   // Google tambien responde 404 cuando la cuenta no tiene acceso al archivo.
   if (status === 404) return `No se encontro ${what}, o tu cuenta no tiene acceso.`;
   if (status === 429) return 'Google limito las consultas por un momento. Probá de nuevo en un minuto.';

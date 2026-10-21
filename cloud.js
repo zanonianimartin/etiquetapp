@@ -754,8 +754,18 @@ async function imageFolder() {
     throw new Error('No se puede abrir la carpeta de imagenes del equipo en Drive. Pedile a un administrador que la comparta con tu cuenta (o que revise la clave carpetaImagenes en la pestana Ajustes).');
   }
 
-  // Al lado de la planilla, asi quedan juntas en Drive.
-  const folder = await gCreateFolder(FOLDER_NAME, await gParentOf(G.sheet.id));
+  /* Al lado de la planilla, asi quedan juntas en Drive. Si en esa carpeta
+     no se puede crear nada (es de otra persona y solo se compartio la
+     planilla), va a la raiz de "Mi unidad". Si tampoco se puede ahi, el
+     problema no es la carpeta y se muestra el error de la raiz. */
+  const padre = await gParentOf(G.sheet.id);
+  let folder;
+  try {
+    folder = await gCreateFolder(FOLDER_NAME, padre);
+  } catch (err) {
+    if (!padre) throw err;
+    folder = await gCreateFolder(FOLDER_NAME, null);
+  }
   await gUpsert('Ajustes', 'clave', { clave: 'carpetaImagenes', valor: folder.id });
   cloud.ajustes.carpetaImagenes = folder.id;
   /* Se comparte ya con los usuarios activos, para no depender de que corra
