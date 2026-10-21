@@ -769,16 +769,23 @@ function bindCloudEvents() {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') createProduct();
   });
 
-  /* Elegir (o terminar de escribir) un codigo del catalogo en el campo de la
-     etiqueta completa el resto. Si la etiqueta ya tiene esos datos no hace
-     nada, asi no aparece el aviso cada vez que se sale del campo. */
-  $('fCodigo').addEventListener('change', () => {
-    const c = cloud.catalog.find((x) => x.codigo === $('fCodigo').value.trim());
+  /* Elegir un producto de la lista, en el buscador o en el campo Codigo de
+     barras de la etiqueta, completa todo menos lote y vencimiento sin tener
+     que tocar Aplicar. El navegador avisa la eleccion con `input`; escribir
+     el codigo completo a mano tambien cuenta. Si la etiqueta ya tiene esos
+     datos no hace nada, asi no se repite el aviso. */
+  const autoAplicar = (input) => {
+    const c = cloud.catalog.find((x) => x.codigo === input.value.trim());
     if (!c) return;
     const l = currentLabel();
-    const igual = ['producto', 'cantidad', 'unidad', 'ingredientes', 'infoExtra']
-      .every((k) => String(l[k] || '') === String(c[k] || ''));
+    const igual = ['producto', 'cantidad', 'unidad', 'codigo', 'ingredientes', 'infoExtra']
+      .every((k) => String(l[k] || '') === String(c[k] || ''))
+      && JSON.stringify(cloneNutri(l.nutri)) === JSON.stringify(cloneNutri(c.nutri));
     if (!igual) applyCatalog(c);
+  };
+  ['input', 'change'].forEach((ev) => {
+    $('catSearch').addEventListener(ev, () => autoAplicar($('catSearch')));
+    $('fCodigo').addEventListener(ev, () => autoAplicar($('fCodigo')));
   });
 
   /* --- lotes --- */
