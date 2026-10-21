@@ -738,11 +738,26 @@ async function registerLote() {
   toast(nuevo ? `Lote ${currentLote()} registrado` : `Lote ${currentLote()} actualizado`);
 }
 
-/* Devuelve el id de la carpeta de imagenes del equipo, creandola la primera
-   vez. El id queda en la pestana Ajustes para que todos suban a la misma.
-   Antes de crearla se relee Ajustes: otra persona pudo haberla creado
-   despues de la ultima carga. */
+/* Devuelve el id de la carpeta de imagenes del equipo. Con imagesFolderId en
+   config.js es siempre esa. Si no, se crea la primera vez y su id queda en
+   la pestana Ajustes para que todos suban a la misma; antes de crearla se
+   relee Ajustes: otra persona pudo haberla creado despues de la ultima
+   carga. */
 async function imageFolder() {
+  const fija = String(gConfig().imagesFolderId || '').trim();
+  if (fija) {
+    if (!await gFolderOk(fija)) {
+      throw new Error('No se puede abrir la carpeta de imagenes del equipo en Drive. Pedile a quien la creo que la comparta con tu cuenta como Editor.');
+    }
+    /* Se anota en Ajustes para que el script de permisos (usuarios.gs), que
+       no lee config.js, sepa que carpeta compartir con el equipo. */
+    if (cloud.ajustes.carpetaImagenes !== fija) {
+      await gUpsert('Ajustes', 'clave', { clave: 'carpetaImagenes', valor: fija });
+      cloud.ajustes.carpetaImagenes = fija;
+    }
+    return fija;
+  }
+
   const guardada = async () => {
     const { rows } = await gReadTab('Ajustes');
     const r = rows.find((x) => String(x.clave).trim() === 'carpetaImagenes');

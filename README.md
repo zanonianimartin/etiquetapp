@@ -65,10 +65,12 @@ solo hace falta para abrir la app a cualquier cuenta.
    alcanza con agregar su mail en la pestaña `Usuarios`: no hace falta compartir la planilla
    ni la carpeta de imágenes a mano.
 
-La carpeta de imágenes (*EtiquetApp - imagenes de lotes*) la crea la app sola con la
-primera foto, en la misma carpeta de Drive donde está la planilla, y anota su ID en la
-pestaña `Ajustes` para que todos suban a la misma. Se puede mover a otra carpeta desde
-Drive sin romper nada.
+Las imágenes de los lotes van siempre a la carpeta de Drive fijada en `config.js`
+(`imagesFolderId`, la parte final de la URL de la carpeta, después de `/folders/`). Todo el
+equipo necesita permiso de **Editor** sobre esa carpeta. La app anota su ID en la pestaña
+`Ajustes` para que el script de permisos también la comparta. Si `imagesFolderId` queda
+vacío, la app crea una carpeta propia (*EtiquetApp - imagenes de lotes*) con la primera foto,
+al lado de la planilla.
 
 ### 4. Quién puede entrar: la pestaña Usuarios
 

@@ -17,5 +17,11 @@ window.ETIQUETAPP_CONFIG = {
      Con este valor cargado todos los usuarios trabajan sobre esa planilla y
      la app no ofrece elegir ni crear otra. Vacio solo durante la puesta en
      marcha: deja crear la planilla una vez para despues copiar su ID aca. */
-  spreadsheetId: '1b7bx9Dhv05bcDEleWOJxZE0I44Xy6iwoNVS8Onmu0Bs'
+  spreadsheetId: '1b7bx9Dhv05bcDEleWOJxZE0I44Xy6iwoNVS8Onmu0Bs',
+
+  /* ID de la carpeta de Google Drive donde van siempre las imagenes de los
+     lotes (la parte final de su URL, despues de "/folders/"). Vacio: la app
+     crea una carpeta propia con la primera imagen. Todo el equipo necesita
+     permiso de Editor sobre esta carpeta. */
+  imagesFolderId: '1yYYwgeuUrzR__YFn3CRcX6hx5eLHxubv'
 };
