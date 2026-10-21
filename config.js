@@ -11,7 +11,7 @@ window.ETIQUETAPP_CONFIG = {
   /* ID de cliente OAuth (tipo "Aplicacion web") creado en
      https://console.cloud.google.com/apis/credentials
      Termina en ".apps.googleusercontent.com". */
-  googleClientId: '',
+  googleClientId: '232994870082-vg5nu63j4epd3o30hr3okbumfba0fr8q.apps.googleusercontent.com',
 
   /* ID de la planilla del equipo (la parte entre "/d/" y "/edit" de su URL).
      Con este valor cargado todos los usuarios trabajan sobre esa planilla y
