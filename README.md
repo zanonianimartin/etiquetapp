@@ -114,6 +114,20 @@ Como las cuentas se agregan desde la planilla, conviene publicar la app en Googl
 usuario de prueba. Sin la verificación de Google, la pantalla de login sigue mostrando el
 aviso de "app no verificada" y admite hasta 100 cuentas.
 
+### Publicar una versión nueva
+
+Antes de cada `git push`, correr:
+
+```
+node scripts/bump-version.js
+```
+
+Pone una versión nueva (fecha y hora) en `index.html`: en el `?v=` de cada script y hoja de
+estilo, y en la versión que se ve en la pantalla de ingreso y en la ventana de la planilla.
+Así los navegadores bajan los archivos nuevos en lugar de usar copias viejas de su caché,
+algo que en Chrome del celular pasa seguido. Si un celular muestra una versión vieja,
+abrir el sitio en una pestaña de incógnito lo confirma.
+
 ### Probar en la PC
 
 El login de Google no funciona abriendo `index.html` con doble clic: hace falta servir la

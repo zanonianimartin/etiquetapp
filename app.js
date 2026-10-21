@@ -1542,6 +1542,8 @@ function syncControls() {
    ============================================================ */
 
 async function init() {
+  const version = document.documentElement.dataset.version;
+  if (version) document.querySelectorAll('.app-ver').forEach((p) => { p.textContent = `Version ${version}`; });
   buildPresetOptions();
 
   const saved = await window.api.loadConfig();
