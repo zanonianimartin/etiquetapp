@@ -275,8 +275,13 @@ no se guarda nada hasta completarlos.
 seleccionada con su código, producto, vencimiento y **cantidad de paquetes** —obligatoria:
 sin un número entero mayor que 0 no se puede registrar el lote ni adjuntarle imagen; al
 elegir un lote ya registrado se muestra la cantidad guardada— y opcionalmente con una imagen de
-registro (por ejemplo, una foto de la tirada), que se guarda en la carpeta del equipo en
-Google Drive. **La imagen no se imprime**: se ve en el panel y, con un clic, se abre en Drive.
+registro. **Se imprime una etiqueta por paquete**: cargar la cantidad de paquetes ajusta
+*Etiquetas a imprimir*, y cambiar ese número actualiza los paquetes (en un lote nuevo los
+paquetes quedan vacíos hasta escribirlos, porque son obligatorios). Si un lote tiene más de
+2000 paquetes se guarda la cantidad real, pero se imprimen 2000, el máximo por tirada. Un
+cambio en los paquetes queda en la planilla al tocar *Registrar lote* / *Actualizar registro*.
+La imagen de registro (por ejemplo, una foto de la tirada) se guarda en la carpeta del equipo
+en Google Drive. **La imagen no se imprime**: se ve en el panel y, con un clic, se abre en Drive.
 Cambiar la imagen reemplaza la anterior. El campo *Lote*
 sugiere los lotes ya registrados.
 

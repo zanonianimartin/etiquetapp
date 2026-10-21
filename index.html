@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261020-2356">
+<html lang="es" data-version="20261021-0006">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261020-2356">
+<link rel="stylesheet" href="styles.css?v=20261021-0006">
 </head>
 <body data-tab="datos">
 
@@ -300,6 +300,7 @@
           <span>Cantidad de paquetes</span>
           <input type="number" id="loteQty" min="1" step="1" inputmode="numeric" placeholder="120">
         </label>
+        <p class="hint">Es la cantidad de etiquetas que se imprimen: una por paquete.</p>
         <div class="row2">
           <button id="btnLoteSave" class="btn small">Registrar lote</button>
           <button id="btnLoteImg" class="btn ghost small">Adjuntar imagen…</button>
@@ -325,6 +326,8 @@
         <button class="btn ghost small" data-qty="100">100</button>
       </div>
       <p class="hint" id="qtyHint">—</p>
+      <p class="hint">Se imprime una etiqueta por paquete: cargar la <b>cantidad de paquetes</b>
+        en el registro de lotes ajusta este numero, y cambiarlo aca la actualiza.</p>
       <p class="hint tip">Con el campo seleccionado, la rueda del mouse ajusta el valor
         (<b>Shift</b> = de a 10). Vale para todos los campos numericos.</p>
     </section>
@@ -509,11 +512,11 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261020-2356"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261020-2356"></script>
-<script src="google.js?v=20261020-2356"></script>
-<script src="browser-api.js?v=20261020-2356"></script>
-<script src="cloud.js?v=20261020-2356"></script>
-<script src="app.js?v=20261020-2356"></script>
+<script src="config.js?v=20261021-0006"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261021-0006"></script>
+<script src="google.js?v=20261021-0006"></script>
+<script src="browser-api.js?v=20261021-0006"></script>
+<script src="cloud.js?v=20261021-0006"></script>
+<script src="app.js?v=20261021-0006"></script>
 </body>
 </html>

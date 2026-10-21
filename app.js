@@ -1184,6 +1184,7 @@ function bindEvents() {
     const raw = $('qty').value.trim();
     if (!raw) return;                      // el usuario esta borrando para reescribir
     setQty(clampNum(raw, 1, MAX_QTY, state.qty));
+    syncPaquetesDesdeQty();                // un paquete por etiqueta (cloud.js)
     clearTimeout(qtyTimer);
     qtyTimer = setTimeout(() => { renderSheets(); fillForm(); }, 200);
   };
@@ -1192,7 +1193,7 @@ function bindEvents() {
   document.querySelectorAll('[data-qty]').forEach((b) => {
     b.addEventListener('click', () => {
       const v = b.dataset.qty === 'hoja' ? perPage() : parseInt(b.dataset.qty, 10);
-      setQty(v); syncQty(); renderSheets(); fillForm();
+      setQty(v); syncQty(); syncPaquetesDesdeQty(); renderSheets(); fillForm();
       $('qty').focus();          // deja el campo listo para seguir ajustando
       $('qty').select();
     });
