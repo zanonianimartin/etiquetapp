@@ -674,6 +674,70 @@ body.cloud-on .gate{display:none}
 .gate-msg.info{color:var(--muted)}
 
 /* ============================================================
+   RESPONSIVE
+   ============================================================
+
+   - Hasta 1280 px: las tres columnas, con los paneles mas angostos.
+   - Menos de 1024 px (tablet, celular): una columna por vez, elegida con
+     las pestanas .mtabs (body[data-tab]).
+   Todo va en @media screen: la impresion no se entera. */
+
+.mtabs{display:none}
+.modal, .modal.md, .modal.lg, .gate-box{max-width:calc(100vw - 24px)}
+
+@media screen and (max-width: 1280px){
+  .layout{grid-template-columns:240px 1fr 280px}
+}
+
+@media screen and (max-width: 1023px){
+  /* Barra superior en dos renglones: marca y estado arriba, botones abajo. */
+  .topbar{flex:0 0 auto; height:auto; flex-wrap:wrap; padding:8px 12px; gap:8px}
+  .brand-mark{width:30px; height:30px; font-size:19px}
+  .brand small{display:none}
+  .topbar-actions{flex:1 1 auto; flex-wrap:wrap; justify-content:flex-end; gap:6px}
+  .topbar-actions .sep{display:none}
+  #printStatus{flex:1 1 100%; max-width:none; text-align:center; order:-1}
+
+  .mtabs{
+    display:flex; flex:0 0 auto;
+    background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  .mtabs button{
+    flex:1 1 0; padding:10px 6px; font:inherit; font-size:12.5px;
+    color:var(--muted); background:transparent; border:0;
+    border-bottom:2px solid transparent; cursor:pointer;
+  }
+  .mtabs button.on{color:var(--txt); border-bottom-color:var(--accent); font-weight:600}
+
+  .layout{grid-template-columns:minmax(0, 1fr)}
+  .layout > [data-pane]{display:none}
+  body[data-tab="hoja"] .layout > [data-pane="hoja"],
+  body[data-tab="datos"] .layout > [data-pane="datos"]{display:block}
+  body[data-tab="vista"] .layout > [data-pane="vista"]{display:flex}
+  .panel.left, .panel.right{border:0}
+  /* Los paneles ocupan todo el ancho: el contenido no se estira de mas. */
+  .panel > .group{max-width:560px; margin-left:auto; margin-right:auto}
+
+  .scroll{padding:12px}
+  .sheets{gap:12px}
+}
+
+@media screen and (max-width: 600px){
+  .topbar-actions .btn{padding:6px 9px; font-size:12px}
+  .btn.google{max-width:150px}
+  .workspace-bar{padding:0 8px}
+  .pagectl .muted{font-size:10.5px}
+  .tpl-picker{grid-template-columns:repeat(2, 1fr)}
+  .modal{padding:14px}
+  .modal.lg{max-height:92vh}
+  /* Tabla nutricional: la columna del nombre necesita lugar en pantallas chicas. */
+  .nutri-head, .nutri-row{grid-template-columns:1fr 64px 52px 44px 24px; gap:4px}
+  .nutri-row input{padding:6px 5px}
+  /* 16 px evita que el iPhone haga zoom al tocar un campo. */
+  .field input[type=text], .field input[type=number], .field select, textarea, .nutri-row input{font-size:16px}
+}
+
+/* ============================================================
    IMPRESION
    ============================================================ */
 

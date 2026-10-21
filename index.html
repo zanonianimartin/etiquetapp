@@ -8,7 +8,7 @@
 <link rel="icon" href="assets/logo-xilo.png">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-tab="datos">
 
 <!-- Pantalla de ingreso: tapa la app hasta que entra una cuenta habilitada
      en la pestana Usuarios de la planilla. -->
@@ -47,10 +47,18 @@
   </div>
 </header>
 
+<!-- Pestanas para pantallas angostas (tablet / celular): ahi se ve una sola
+     columna por vez. En pantallas anchas no se muestran. -->
+<nav class="mtabs no-print" id="mtabs">
+  <button data-tab="datos" class="on">Datos</button>
+  <button data-tab="vista">Vista previa</button>
+  <button data-tab="hoja">Hoja y diseno</button>
+</nav>
+
 <main class="layout no-print-layout">
 
   <!-- ============ PANEL IZQUIERDO: HOJA Y DISENO ============ -->
-  <aside class="panel left no-print">
+  <aside class="panel left no-print" data-pane="hoja">
 
     <section class="group">
       <h3>Formato de hoja</h3>
@@ -159,7 +167,7 @@
   </aside>
 
   <!-- ============ CENTRO: PREVIEW ============ -->
-  <section class="workspace no-print-ui">
+  <section class="workspace no-print-ui" data-pane="vista">
     <div class="workspace-bar no-print">
       <div class="zoomctl">
         <button id="zoomOut" class="btn ghost small">−</button>
@@ -178,7 +186,7 @@
   </section>
 
   <!-- ============ PANEL DERECHO: DATOS ============ -->
-  <aside class="panel right no-print">
+  <aside class="panel right no-print" data-pane="datos">
 
     <section class="group">
       <h3>Catalogo de productos <span id="catCount" class="badge">—</span></h3>

@@ -1426,6 +1426,19 @@ function bindEvents() {
   $('zoomFit').addEventListener('click', () => {
     setZoom(($('scroll').clientWidth - 56) / (A4.w * MM_PX));
   });
+  /* Pestanas de pantallas angostas (ver .mtabs en styles.css). Al abrir la
+     vista previa, si la hoja no entra a lo ancho, se ajusta el zoom. */
+  document.querySelectorAll('#mtabs [data-tab]').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.body.dataset.tab = b.dataset.tab;
+      document.querySelectorAll('#mtabs [data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+      if (b.dataset.tab !== 'vista') return;
+      const disponible = $('scroll').clientWidth - 24;
+      if (A4.w * MM_PX * state.zoom > disponible) setZoom(disponible / (A4.w * MM_PX));
+      checkFit();
+    });
+  });
+
   $('scroll').addEventListener('wheel', (e) => {
     if (!e.ctrlKey) return;
     e.preventDefault();
