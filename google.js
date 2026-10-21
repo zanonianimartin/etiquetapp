@@ -164,17 +164,22 @@ function gErrorText(status, body, what) {
   return `Error de Google (${status})` + (msg ? ': ' + msg : '');
 }
 
-/* opts: method, body (texto JSON, o FormData para subir archivos),
-   blob (devuelve el contenido como Blob) y what (para los mensajes). */
+/* opts: method, body (texto JSON, o un archivo/Blob), headers extra,
+   blob (devuelve el contenido como Blob), raw (devuelve la Response, para
+   leer encabezados) y what (para los mensajes). */
 async function gFetch(url, opts = {}, retry = true) {
   await gEnsureToken();
   const headers = { Authorization: 'Bearer ' + G.token };
   if (typeof opts.body === 'string') headers['Content-Type'] = 'application/json';
+  Object.assign(headers, opts.headers || {});
   let res;
   try {
     res = await fetch(url, { method: opts.method || 'GET', body: opts.body, headers });
   } catch {
-    throw new Error('Sin conexion con Google. Revisá internet y probá de nuevo.');
+    /* El navegador no recibio respuesta: sin internet, un bloqueador de
+       anuncios que freno el pedido, o Google corto la conexion. */
+    throw new Error(`No se pudo comunicar con Google${opts.what ? ` (${opts.what})` : ''}. ` +
+      'Revisá internet y probá de nuevo. Si sigue, probá desactivando el bloqueador de anuncios del navegador para este sitio.');
   }
   if (res.status === 401 && retry) {       // token revocado o vencido antes de tiempo
     G.exp = 0;
@@ -184,6 +189,7 @@ async function gFetch(url, opts = {}, retry = true) {
     const body = await res.json().catch(() => null);
     throw new Error(gErrorText(res.status, body, opts.what || 'la planilla'));
   }
+  if (opts.raw) return res;
   if (opts.blob) return res.blob();
   return res.json().catch(() => null);     // 204 y respuestas vacias
 }
@@ -402,13 +408,27 @@ async function gFolderOk(folderId) {
   }
 }
 
+/* Subida "resumable" en dos pasos: primero se abre la sesion con el nombre y
+   la carpeta, y despues se manda el archivo a la URL que devuelve Google.
+   La subida "multipart" de un solo paso solo admite archivos de hasta 5 MB,
+   y una foto de celular suele pesar mas: Google corta la conexion y el
+   navegador lo ve como "sin conexion". */
 async function gUploadImage(file, name, folderId) {
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify({ name, parents: [folderId] })], { type: 'application/json' }));
-  form.append('file', file);
-  return gFetch(`${DRIVE_UPLOAD}?uploadType=multipart&fields=id,name,webViewLink&${ALL_DRIVES}`, {
-    method: 'POST', body: form, what: 'la carpeta de imagenes'
+  const tipo = file.type || 'application/octet-stream';
+  const inicio = await gFetch(`${DRIVE_UPLOAD}?uploadType=resumable&fields=id,name,webViewLink&${ALL_DRIVES}`, {
+    method: 'POST',
+    body: JSON.stringify({ name, parents: [folderId] }),
+    headers: { 'X-Upload-Content-Type': tipo, 'X-Upload-Content-Length': String(file.size) },
+    raw: true,
+    what: 'la carpeta de imagenes'
   });
+  const sesion = inicio.headers.get('Location');
+  if (!sesion) throw new Error('Google no abrio la subida de la imagen. Probá de nuevo.');
+
+  const subida = await gFetch(sesion, { method: 'PUT', body: file, what: 'la subida de la imagen' });
+  if (subida && subida.webViewLink) return subida;
+  // Por las dudas: si la respuesta no trajo el enlace, se pide aparte.
+  return gFetch(`${DRIVE_API}/${subida.id}?fields=id,name,webViewLink&${ALL_DRIVES}`, { what: 'la imagen' });
 }
 
 function gImageBlob(fileId) {
