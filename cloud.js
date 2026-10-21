@@ -795,28 +795,41 @@ async function imageFolder() {
 
 const tamano = (bytes) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
-/* Achica las fotos de camara antes de subirlas: una de celular pesa 4-8 MB y
-   con datos moviles la subida se corta facil. Para un registro alcanzan
-   2560 px de lado; en JPEG al 85 % queda en ~1 MB. Las chicas, y las que no
-   son fotos (PNG con transparencia, GIF, SVG), se suben tal cual. Si algo
-   falla al achicar, tambien se sube la original. */
-const PHOTO_MAX_PX = 2560;
+/* Achica las fotos antes de subirlas: una de celular pesa 4-8 MB, con datos
+   moviles la subida se corta facil, y por debajo de UPLOAD_SIMPLE_MAX va en
+   un solo pedido (el unico que funciona en iPhone, ver google.js). Para un
+   registro alcanzan 2560 px de lado; en JPEG al 85 % queda en ~1 MB. Si no
+   entra, se prueba con menos calidad y menos pixeles.
+   Las fotos chicas se suben tal cual. Un PNG (con posible transparencia)
+   solo se convierte si no entraria en un solo pedido, y GIF y SVG nunca.
+   Si algo falla al achicar, se sube la original. */
 const PHOTO_MIN_BYTES = 1.5 * 1024 * 1024;
+const PHOTO_PASOS = [[2560, 0.85], [2560, 0.72], [2048, 0.7], [1600, 0.65]];
 
 async function shrinkPhoto(file) {
-  if (!/^image\/(jpeg|jpg|webp|heic|heif)$/i.test(file.type) || file.size < PHOTO_MIN_BYTES) return file;
+  const foto = /^image\/(jpeg|jpg|webp|heic|heif)$/i.test(file.type) && file.size >= PHOTO_MIN_BYTES;
+  const grande = /^image\/(png|bmp|tiff)$/i.test(file.type) && file.size > UPLOAD_SIMPLE_MAX;
+  if (!foto && !grande) return file;
   try {
     const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });  // respeta la rotacion de la camara
-    const k = Math.min(1, PHOTO_MAX_PX / Math.max(bmp.width, bmp.height));
-    const cv = document.createElement('canvas');
-    cv.width = Math.round(bmp.width * k);
-    cv.height = Math.round(bmp.height * k);
-    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    let mejor = null;
+    for (const [maxPx, calidad] of PHOTO_PASOS) {
+      const k = Math.min(1, maxPx / Math.max(bmp.width, bmp.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(bmp.width * k);
+      cv.height = Math.round(bmp.height * k);
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff';                     // JPEG no tiene transparencia
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
+      const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', calidad));
+      if (blob) mejor = blob;
+      if (blob && blob.size <= UPLOAD_SIMPLE_MAX) break;
+    }
     bmp.close();
-    const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.85));
-    if (!blob || blob.size >= file.size) return file;
+    if (!mejor || mejor.size >= file.size) return file;
     const nombre = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-    return new File([blob], nombre, { type: 'image/jpeg', lastModified: file.lastModified });
+    return new File([mejor], nombre, { type: 'image/jpeg', lastModified: file.lastModified });
   } catch {
     return file;
   }

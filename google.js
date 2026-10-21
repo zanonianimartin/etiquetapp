@@ -419,12 +419,43 @@ async function gFolderOk(folderId) {
   }
 }
 
-/* Subida "resumable" en dos pasos: primero se abre la sesion con el nombre y
-   la carpeta, y despues se manda el archivo a la URL que devuelve Google.
-   La subida "multipart" de un solo paso solo admite archivos de hasta 5 MB,
-   y una foto de celular suele pesar mas: Google corta la conexion y el
-   navegador lo ve como "sin conexion". */
+/* Hasta este tamano la imagen va en un solo pedido "multipart" (Google lo
+   admite hasta 5 MB). Las fotos de celular se achican antes (shrinkPhoto en
+   cloud.js), asi que es el caso normal. */
+const UPLOAD_SIMPLE_MAX = 4.5 * 1024 * 1024;
+
 async function gUploadImage(file, name, folderId) {
+  return file.size <= UPLOAD_SIMPLE_MAX
+    ? gUploadMultipart(file, name, folderId)
+    : gUploadResumable(file, name, folderId);
+}
+
+/* Un solo POST con los metadatos y el archivo, en el formato multipart/related
+   que documenta Google. En iPhone (Safari, y Chrome que usa el mismo motor)
+   el PUT de la subida resumable falla con "Load failed", mientras que un POST
+   a esta misma direccion funciona. */
+async function gUploadMultipart(file, name, folderId) {
+  const limite = 'etiquetapp' + Math.random().toString(36).slice(2);
+  const cuerpo = new Blob([
+    `--${limite}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+    JSON.stringify({ name, parents: [folderId] }),
+    `\r\n--${limite}\r\nContent-Type: ${file.type || 'application/octet-stream'}\r\n\r\n`,
+    file,
+    `\r\n--${limite}--`
+  ]);
+  return gFetch(`${DRIVE_UPLOAD}?uploadType=multipart&fields=id,name,webViewLink&${ALL_DRIVES}`, {
+    method: 'POST',
+    body: cuerpo,
+    headers: { 'Content-Type': `multipart/related; boundary=${limite}` },
+    retries: 3,
+    what: 'al enviar la imagen'
+  });
+}
+
+/* Subida "resumable" en dos pasos, para archivos de mas de 4,5 MB: primero se
+   abre la sesion con el nombre y la carpeta, y despues se manda el archivo a
+   la URL que devuelve Google. */
+async function gUploadResumable(file, name, folderId) {
   const tipo = file.type || 'application/octet-stream';
   const inicio = await gFetch(`${DRIVE_UPLOAD}?uploadType=resumable&fields=id,name,webViewLink&${ALL_DRIVES}`, {
     method: 'POST',
