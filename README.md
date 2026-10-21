@@ -258,16 +258,18 @@ cargado en la etiqueta. *Guardar etiqueta actual en el catálogo* actualiza un p
 ya existe con lo que tenga la etiqueta (por ejemplo, una tabla nutricional nueva), sin
 tocar su clave.
 
-Elegir un producto —desde el buscador, por clave, código o nombre, o directamente en el
-campo *Código de barras*— completa todo **menos el lote y el vencimiento**.
+Elegir un producto desde el buscador —por clave, código o nombre— completa todo **menos el
+lote y el vencimiento**. El campo *Código de barras* de la etiqueta es de **solo lectura**:
+el código sale siempre del producto del catálogo (o de *Nuevo producto*).
 
 **Los cambios se guardan solos.** Una etiqueta cuyo código está en el catálogo queda
 vinculada a ese producto (el panel del catálogo lo indica). Lo que se cambie en sus datos
 —producto, cantidad, unidad, ingredientes, información adicional o tabla nutricional— se
-guarda en la planilla un segundo después de dejar de escribir, y lo ve todo el equipo. El
-lote y el vencimiento no se guardan en el producto, y la clave y el código nunca cambian.
-Si el producto o la cantidad quedan vacíos, no se guarda nada hasta completarlos. Cambiar
-el código de la etiqueta no edita el producto: pasa a otro producto, o a ninguno.
+guarda en la planilla **al salir del campo** (clic afuera, Tab o Enter; la unidad, al
+elegirla; la tabla, al tocar *Guardar*), y lo ve todo el equipo. Mientras se escribe, el
+panel avisa que hay cambios sin guardar. El lote y el vencimiento no se guardan en el
+producto, y la clave y el código nunca cambian. Si el producto o la cantidad quedan vacíos,
+no se guarda nada hasta completarlos.
 
 **Registro de lotes** (requiere conexión con Google). Asocia el lote de la etiqueta
 seleccionada con su código, producto y vencimiento, y opcionalmente con una imagen de

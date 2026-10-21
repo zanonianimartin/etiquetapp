@@ -270,9 +270,13 @@
 
       <label class="field">
         <span>Codigo de barras <span class="badge">opcional</span></span>
-        <input type="text" id="fCodigo" list="catList" placeholder="7791234567898" maxlength="40">
+        <!-- Solo lectura: el codigo sale del producto del catalogo (clave). -->
+        <input type="text" id="fCodigo" readonly tabindex="-1" placeholder="Se completa al elegir un producto"
+               title="El codigo de barras se completa al elegir un producto del catalogo">
         <em class="err" id="codigoErr"></em>
       </label>
+      <p class="hint">Se completa al elegir un producto del <b>catalogo</b> (o al crear uno
+        con <b>Nuevo producto</b>). No se edita a mano.</p>
 
       <label class="field">
         <span>Informacion adicional <span class="badge">opcional</span></span>

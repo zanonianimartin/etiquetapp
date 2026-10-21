@@ -1024,7 +1024,7 @@ function saveNutri() {
 
   closeNutri();
   syncNutriBadge();
-  catalogEdited();                    // la tabla tambien es dato del producto
+  catalogEdited(true);                // la tabla tambien es dato del producto: se guarda al confirmarla
   renderSheets();
   toast(nutri.on
     ? `Tabla nutricional con ${nutri.items.length} elementos` + (state.applyAll ? ' en todas las etiquetas' : '')
@@ -1266,17 +1266,19 @@ function bindEvents() {
     markMissing();
     refreshPrintState();            // el boton Imprimir reacciona al instante
     refreshLoteUI();
-    /* Los datos del producto se copian al catalogo (cloud.js). El codigo no
-       cuenta: cambiarlo es pasar a otro producto, no editar este. Lote y
-       vencimiento tampoco, pero de eso se encarga catalogEdited. */
-    if (e.target.id === 'fCodigo') paintCatLink();   // puede haber pasado a otro producto, o a ninguno
-    else catalogEdited();
+    /* Los datos del producto se copian al catalogo (cloud.js): mientras se
+       escribe solo se anota el cambio; el select de unidad no tiene
+       "mientras", su `change` ya es la eleccion final y se guarda. Lote y
+       vencimiento no van al producto: de eso se encarga catalogEdited. */
+    catalogEdited(e.type === 'change');
     clearTimeout(editTimer);
     editTimer = setTimeout(renderSheets, 90);
   };
-  ['fProducto', 'fCantidad', 'fLote', 'fVenc', 'fCodigo',
+  ['fProducto', 'fCantidad', 'fLote', 'fVenc',
    'fIngredientes', 'fInfoExtra'].forEach((id) => {
     $(id).addEventListener('input', onEdit);
+    // Al salir del campo (clic afuera, Tab o Enter) se guarda en la planilla.
+    $(id).addEventListener('change', () => catalogEdited(true));
   });
   $('fUnidad').addEventListener('change', onEdit);
 

@@ -389,12 +389,12 @@ function findCatalog(text) {
 
 /* Una etiqueta cuyo codigo esta en el catalogo queda vinculada a ese
    producto: lo que se cambie en sus datos (todo menos lote y vencimiento)
-   se guarda solo en la planilla, un momento despues de dejar de escribir.
-   Se guarda una copia de la etiqueta al momento de editar: si se esperara
-   al guardado para leerla, la seleccion pudo haber pasado a otra etiqueta. */
+   se guarda solo en la planilla al salir del campo (evento `change`).
+   Mientras se escribe solo se guarda una copia de la etiqueta: al salir del
+   campo la seleccion pudo haber pasado a otra (el clic que saca el foco
+   puede ser sobre otra etiqueta), y lo que va al catalogo es lo editado. */
 const PRODUCT_FIELDS = ['producto', 'cantidad', 'unidad', 'ingredientes', 'infoExtra'];
-const SYNC_DELAY = 1200;
-let syncTimer = null;
+let syncTimer = null;            // reintento si la planilla esta ocupada
 let syncPending = null;          // copia de la etiqueta editada, esperando guardarse
 let linkMsgTimer = null;
 
@@ -415,7 +415,8 @@ function paintCatLink(estado, detalle) {
   p.classList.remove('ok', 'bad');
   if (!cloudReady()) { p.textContent = ''; return; }
   const c = linkedProduct(currentLabel());
-  if (estado === 'saving') p.textContent = 'Guardando los cambios en el catalogo…';
+  if (estado === 'pending') p.textContent = 'Cambios sin guardar: se guardan en el catalogo al salir del campo.';
+  else if (estado === 'saving') p.textContent = 'Guardando los cambios en el catalogo…';
   else if (estado === 'saved') {
     p.textContent = `Cambios guardados en "${detalle}".`;
     p.classList.add('ok');
@@ -427,19 +428,25 @@ function paintCatLink(estado, detalle) {
     p.textContent = 'No se pudo actualizar el producto: ' + detalle;
     p.classList.add('bad');
   } else if (c) {
-    p.textContent = `Etiqueta vinculada a "${c.producto}": los cambios en sus datos se guardan solos en el catalogo (menos lote y vencimiento).`;
+    p.textContent = `Etiqueta vinculada a "${c.producto}": los cambios en sus datos se guardan en el catalogo al salir de cada campo (menos lote y vencimiento).`;
   } else {
     p.textContent = '';
   }
 }
 
-function catalogEdited() {
+/* `guardar`: false mientras se escribe (solo anota el cambio), true al salir
+   del campo o al confirmar la tabla nutricional (lo manda a la planilla). */
+function catalogEdited(guardar = false) {
   if (!cloudReady()) return;
   const l = currentLabel();
-  if (!linkedProduct(l)) return;
-  syncPending = cloneLabel(l);
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(syncProduct, SYNC_DELAY);
+  if (linkedProduct(l)) {
+    syncPending = cloneLabel(l);
+    if (!guardar) paintCatLink('pending');
+  }
+  if (guardar && syncPending) {
+    clearTimeout(syncTimer);
+    syncProduct();
+  }
 }
 
 async function syncProduct() {
@@ -860,11 +867,12 @@ function bindCloudEvents() {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') createProduct();
   });
 
-  /* Elegir un producto de la lista, en el buscador o en el campo Codigo de
-     barras de la etiqueta, completa todo menos lote y vencimiento sin tener
-     que tocar Aplicar. El navegador avisa la eleccion con `input`; escribir
-     el codigo completo a mano tambien cuenta. Si la etiqueta ya tiene esos
-     datos no hace nada, asi no se repite el aviso. */
+  /* Elegir un producto de la lista del buscador completa todo menos lote y
+     vencimiento sin tener que tocar Aplicar. El navegador avisa la eleccion
+     con `input`; escribir el codigo completo a mano tambien cuenta. Si la
+     etiqueta ya tiene esos datos no hace nada, asi no se repite el aviso.
+     El campo Codigo de barras de la etiqueta es de solo lectura: este es el
+     unico camino para cambiarlo. */
   const autoAplicar = (input) => {
     const c = cloud.catalog.find((x) => x.codigo === input.value.trim());
     if (!c) return;
@@ -876,7 +884,6 @@ function bindCloudEvents() {
   };
   ['input', 'change'].forEach((ev) => {
     $('catSearch').addEventListener(ev, () => autoAplicar($('catSearch')));
-    $('fCodigo').addEventListener(ev, () => autoAplicar($('fCodigo')));
   });
 
   /* --- lotes --- */
@@ -896,8 +903,8 @@ function bindCloudEvents() {
 
   $('gateLogin').addEventListener('click', onGoogleClick);
 
-  /* Un cambio del producto todavia sin guardar (se guarda ~1 s despues de
-     dejar de escribir): el navegador pregunta antes de cerrar la pagina. */
+  /* Un cambio del producto todavia sin guardar (se guarda al salir del
+     campo): el navegador pregunta antes de cerrar la pagina. */
   window.addEventListener('beforeunload', (e) => {
     if (!syncPending) return;
     syncProduct();
