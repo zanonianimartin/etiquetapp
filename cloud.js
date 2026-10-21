@@ -15,6 +15,7 @@ const cloud = {
   catalog: [],        // { codigo, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri }
   lotes: [],          // { lote, codigo, producto, vencimiento, paquetes, bolsas, imagen, archivo, enlace, actualizado, por }
   bolsas: [],         // bolsas de granel: ver bolsas.js
+  proveedores: [],    // { nombre, telefono, email, notas }: ver bolsas.js
   usuarios: [],       // filas activas de la pestana Usuarios
   ajustes: {},        // pestana Ajustes: clave -> valor
   loaded: 0,          // momento de la ultima carga completa
@@ -126,9 +127,9 @@ function handleDenied(err) {
 
 async function cloudLoadAll() {
   await gEnsureToken();               // una sola renovacion para todas las lecturas
-  const [usu, cat, lot, aju, bol] = await Promise.all([
+  const [usu, cat, lot, aju, bol, prv] = await Promise.all([
     gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Lotes'), gReadTab('Ajustes'),
-    gReadTab('Bolsas')
+    gReadTab('Bolsas'), gReadTab('Proveedores')
   ]);
   cloud.rol = await checkAccess(usu.rows);
   cloud.usuarios = usu.rows.filter((r) => String(r.email || '').trim() && esActivo(r.activo));
@@ -136,6 +137,7 @@ async function cloudLoadAll() {
   cloud.catalog = cat.rows.filter((r) => String(r.codigo || '').trim()).map(catFromRow);
   cloud.lotes = lot.rows.filter((r) => String(r.lote || '').trim()).map(loteFromRow);
   cloud.bolsas = bol.rows.filter((r) => String(r.id || '').trim()).map(bolsaFromRow);   // bolsas.js
+  cloud.proveedores = prv.rows.filter((r) => String(r.nombre || '').trim()).map(provFromRow);
   cloud.loaded = Date.now();
 
   refreshCatalogUI();
@@ -177,6 +179,7 @@ function cloudClear() {
   cloud.usuarios = [];
   cloud.ajustes = {};
   cloud.bolsas = [];
+  cloud.proveedores = [];
   cloud.rol = '';
   clearTimeout(syncTimer);
   syncPending = null;

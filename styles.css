@@ -686,6 +686,10 @@ details.adv summary:hover{color:var(--txt)}
 .bolsas-form{border-right:1px solid var(--line)}
 .bolsas-form .btn.primary.wide{margin-top:4px}
 .bolsas-lista > .group{max-width:900px}
+/* Proveedor: la lista ocupa lo que sobra y los dos botones al costado. */
+.prov-row{display:flex; gap:6px; align-items:stretch}
+.prov-row select{flex:1 1 auto; min-width:0; width:auto}
+.prov-row .btn{flex:0 0 auto}
 
 /* Solo se ve una seccion por vez. En pantalla nada mas: la impresion siempre
    usa las hojas de etiquetas. */

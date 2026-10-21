@@ -32,6 +32,10 @@ const bolsaToRow = (b) => ({
   ...(b.foto !== undefined ? { foto: b.foto, archivo: b.archivo, enlace: b.enlace } : {})
 });
 
+const provFromRow = (r) => ({
+  nombre: String(r.nombre).trim(), telefono: r.telefono || '', email: r.email || '', notas: r.notas || ''
+});
+
 /* "B-0001, B-0003" -> ['B-0001', 'B-0003'] */
 const parseBolsas = (txt) => String(txt || '').split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -89,12 +93,98 @@ function fillBolsaProductos(actual) {
   sel.value = actual && lista.find((p) => normalizar(p) === normalizar(actual)) || '';
 }
 
+/* ---------------- Proveedores ---------------- */
+
+/* Los guardados, mas los que quedaron escritos en bolsas viejas (antes de que
+   existiera la pestana Proveedores), para que esas bolsas se puedan editar
+   sin perder el dato. */
+function nombresProveedores() {
+  const vistos = new Map();
+  [...cloud.proveedores.map((p) => p.nombre), ...cloud.bolsas.map((b) => b.proveedor)]
+    .forEach((n) => { const k = normalizar(n); if (k && !vistos.has(k)) vistos.set(k, n); });
+  return [...vistos.values()].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+const findProv = (nombre) => cloud.proveedores.find((p) => normalizar(p.nombre) === normalizar(nombre)) || null;
+
+function fillProveedores(actual) {
+  const sel = $('bProveedor');
+  sel.innerHTML = '';
+  sel.appendChild(new Option('— sin proveedor —', ''));
+  nombresProveedores().forEach((n) => sel.appendChild(new Option(n, n)));
+  sel.value = actual && nombresProveedores().find((n) => normalizar(n) === normalizar(actual)) || '';
+  $('bProvEditar').disabled = !sel.value;
+}
+
+/* Ventana para crear o editar un proveedor. `nombre`: el que se edita (null:
+   nuevo). El nombre no se cambia al editar: es lo que guardan las bolsas. */
+let provEdit = null;
+
+function openProvModal(nombre = null) {
+  if (!requireCloud()) return;
+  const p = nombre ? findProv(nombre) || { nombre, telefono: '', email: '', notas: '' } : null;
+  provEdit = p ? p.nombre : null;
+  $('pvTitulo').textContent = p ? `Editar proveedor` : 'Nuevo proveedor';
+  $('pvNombre').value = p ? p.nombre : '';
+  $('pvNombre').readOnly = !!p;
+  $('pvTel').value = p ? p.telefono : '';
+  $('pvEmail').value = p ? p.email : '';
+  $('pvNotas').value = p ? p.notas : '';
+  $('pvErr').textContent = '';
+  $('pvEliminar').hidden = !p || !findProv(p.nombre);
+  $('provModal').classList.add('show');
+  setTimeout(() => (p ? $('pvTel') : $('pvNombre')).focus(), 30);
+}
+
+const closeProvModal = () => $('provModal').classList.remove('show');
+
+async function guardarProv() {
+  const nombre = $('pvNombre').value.trim().replace(/\s+/g, ' ');
+  if (!nombre) { $('pvErr').textContent = 'Cargá el nombre del proveedor.'; return; }
+  if (!provEdit && findProv(nombre)) { $('pvErr').textContent = `Ya existe el proveedor "${findProv(nombre).nombre}".`; return; }
+  const prov = {
+    nombre: provEdit || nombre, telefono: $('pvTel').value.trim(),
+    email: $('pvEmail').value.trim(), notas: $('pvNotas').value.trim()
+  };
+  const ok = await cloudTask('Guardando proveedor…', async () => {
+    await gUpsert('Proveedores', 'nombre', prov);
+    return true;
+  });
+  if (!ok) return;
+  const prev = findProv(prov.nombre);
+  if (prev) Object.assign(prev, prov); else cloud.proveedores.push(prov);
+  closeProvModal();
+  fillProveedores(prov.nombre);          // queda elegido en la bolsa
+  toast(provEdit ? `Proveedor "${prov.nombre}" actualizado` : `Proveedor "${prov.nombre}" guardado`);
+}
+
+async function eliminarProv() {
+  const p = findProv(provEdit);
+  if (!p) return;
+  const usan = cloud.bolsas.filter((b) => normalizar(b.proveedor) === normalizar(p.nombre)).map((b) => b.id);
+  if (usan.length) {
+    $('pvErr').textContent = `No se puede eliminar: lo usan las bolsas ${usan.join(', ')}.`;
+    return;
+  }
+  if (!confirm(`¿Eliminar el proveedor "${p.nombre}"?`)) return;
+  const ok = await cloudTask('Eliminando proveedor…', async () => {
+    await gDelete('Proveedores', 'nombre', p.nombre);
+    return true;
+  });
+  if (!ok) return;
+  cloud.proveedores = cloud.proveedores.filter((x) => x !== p);
+  closeProvModal();
+  fillProveedores('');
+  toast(`Proveedor "${p.nombre}" eliminado`);
+}
+
 /* ---------------- Formulario ---------------- */
 
 let bolsaEdit = null;          // id de la bolsa que se esta editando (null: nueva)
 let bolsaFoto = null;          // archivo elegido, se sube al guardar
 
-const BOLSA_CAMPOS = ['bProducto', 'bIngreso', 'bPeso', 'bVenc', 'bPrecio'];
+const BOLSA_CAMPOS = ['bProducto', 'bIngreso', 'bPeso', 'bVenc', 'bPrecio', 'bCantidad'];
+const BOLSAS_MAX_JUNTAS = 50;
 
 function resetBolsaForm(b = null) {
   bolsaEdit = b ? b.id : null;
@@ -105,8 +195,11 @@ function resetBolsaForm(b = null) {
   $('bPeso').value = b ? b.peso : '25';
   $('bVenc').value = b ? b.vencimiento : '';
   $('bPrecio').value = b ? b.precio : '';
-  $('bProveedor').value = b ? b.proveedor : '';
+  fillProveedores(b ? b.proveedor : '');
   $('bLoteProv').value = b ? b.loteProveedor : '';
+  // Varias bolsas iguales se registran juntas; al editar se edita una sola.
+  $('bCantidad').value = '1';
+  $('bCantidadField').hidden = !!b;
   $('bEstado').value = b ? b.estado : 'disponible';
   $('bEstadoField').hidden = !b;          // una bolsa nueva siempre entra disponible
   $('bErr').textContent = '';
@@ -168,8 +261,13 @@ function leerBolsaForm() {
   marcar('bPeso', !(peso > 0), 'Cargá el peso de la bolsa en kg.');
   marcar('bVenc', !/^\d{4}-\d{2}-\d{2}$/.test(venc), 'Cargá el vencimiento de la bolsa.');
   marcar('bPrecio', precioTxt === '' || !(precio >= 0), 'Cargá el precio de compra.');
+  const cantTxt = String($('bCantidad').value).trim();
+  const cantidad = bolsaEdit ? 1 : Number(cantTxt);
+  marcar('bCantidad', !bolsaEdit && !(/^\d+$/.test(cantTxt) && cantidad >= 1 && cantidad <= BOLSAS_MAX_JUNTAS),
+    `La cantidad de bolsas va de 1 a ${BOLSAS_MAX_JUNTAS}.`);
   return {
     errores,
+    cantidad,
     datos: {
       producto, ingreso, peso: String(peso), vencimiento: venc, precio: String(precio),
       proveedor: $('bProveedor').value.trim(), loteProveedor: $('bLoteProv').value.trim(),
@@ -178,55 +276,73 @@ function leerBolsaForm() {
   };
 }
 
-/* Proximo id correlativo, leido de la planilla en el momento: otra persona
-   pudo haber registrado bolsas desde la ultima carga. */
-async function nextBolsaId() {
+/* Proximo numero correlativo, leido de la planilla en el momento: otra
+   persona pudo haber registrado bolsas desde la ultima carga. */
+async function nextBolsaNum() {
   const { rows } = await gReadTab('Bolsas');
-  const max = rows.reduce((m, r) => {
+  return rows.reduce((m, r) => {
     const x = /^B-(\d+)$/i.exec(String(r.id || '').trim());
     return x ? Math.max(m, Number(x[1])) : m;
-  }, 0);
-  return 'B-' + String(max + 1).padStart(4, '0');
+  }, 0) + 1;
 }
+
+const bolsaId = (n) => 'B-' + String(n).padStart(4, '0');
+
+/* Varias bolsas registradas juntas comparten la foto: no se manda a la
+   papelera mientras otra bolsa la siga usando. */
+const fotoEnUso = (fotoId, salvo) => cloud.bolsas.some((b) => b.foto === fotoId && b.id !== salvo);
 
 async function guardarBolsa() {
   if (!requireCloud()) return;
-  const { datos, errores } = leerBolsaForm();
+  const { datos, errores, cantidad } = leerBolsaForm();
   if (errores.length) { $('bErr').textContent = errores[0]; return; }
   $('bErr').textContent = '';
 
   const editando = bolsaEdit;
   const foto = bolsaFoto;
-  showBusy(foto ? 'Preparando la foto…' : 'Guardando la bolsa…');
-  let id;
+  const plural = cantidad > 1;
+  showBusy(foto ? 'Preparando la foto…' : plural ? `Guardando ${cantidad} bolsas…` : 'Guardando la bolsa…');
+  let ids;
   try {
-    id = await cloudTask(null, async () => {
-      const nuevoId = editando || await nextBolsaId();
+    ids = await cloudTask(null, async () => {
+      // Al registrar varias, quedan con ids seguidos: B-0005, B-0006, B-0007…
+      const primero = editando ? null : await nextBolsaNum();
+      const lista = editando ? [editando] : Array.from({ length: cantidad }, (_, i) => bolsaId(primero + i));
+      const rango = lista.length > 1 ? `${lista[0]} a ${lista[lista.length - 1]}` : lista[0];
+
       let campos = {};
       if (foto) {
         const file = await shrinkPhoto(foto);
         showBusy(`Subiendo la foto a Drive (${tamano(file.size)})…`);
         const carpeta = await imageFolder();
-        const subida = await gUploadImage(file, `Bolsa ${nuevoId} - ${file.name}`, carpeta);
+        const subida = await gUploadImage(file, `${lista.length > 1 ? 'Bolsas' : 'Bolsa'} ${rango} - ${file.name}`, carpeta);
         imgCache.set(subida.id, URL.createObjectURL(file));
         campos = { foto: subida.id, archivo: file.name, enlace: subida.webViewLink || '' };
       }
-      showBusy('Guardando la bolsa…');
-      const prev = cloud.bolsas.find((b) => b.id === nuevoId);
-      const bolsa = { id: nuevoId, ...datos, ...campos };
-      await gUpsert('Bolsas', 'id', bolsaToRow(bolsa));
-      // La foto anterior va a la papelera recien con la nueva ya guardada.
-      if (campos.foto && prev && prev.foto) await gTrash(prev.foto);
-      const full = { ...(prev || {}), ...bolsa, ...gStamp() };
-      if (prev) Object.assign(prev, full);
-      else cloud.bolsas.push(full);
-      return nuevoId;
+      showBusy(plural ? `Guardando ${cantidad} bolsas…` : 'Guardando la bolsa…');
+
+      if (editando) {
+        const prev = cloud.bolsas.find((b) => b.id === editando);
+        const bolsa = { id: editando, ...datos, ...campos };
+        await gUpsert('Bolsas', 'id', bolsaToRow(bolsa));
+        // La foto anterior va a la papelera recien con la nueva ya guardada,
+        // y solo si ninguna otra bolsa la comparte.
+        if (campos.foto && prev && prev.foto && !fotoEnUso(prev.foto, editando)) await gTrash(prev.foto);
+        Object.assign(prev, bolsa, gStamp());
+      } else {
+        const nuevas = lista.map((id) => ({ id, ...datos, ...campos }));
+        await gAppendRows('Bolsas', nuevas.map(bolsaToRow));
+        nuevas.forEach((b) => cloud.bolsas.push({ ...b, ...gStamp() }));
+      }
+      return lista;
     });
   } finally {
     hideBusy();
   }
-  if (!id) return;
-  toast(editando ? `Bolsa ${id} actualizada` : `Bolsa ${id} registrada`);
+  if (!ids) return;
+  toast(editando ? `Bolsa ${ids[0]} actualizada`
+    : ids.length > 1 ? `${ids.length} bolsas registradas: ${ids[0]} a ${ids[ids.length - 1]}`
+    : `Bolsa ${ids[0]} registrada`);
   resetBolsaForm();
   refreshBolsasUI();
 }
@@ -242,7 +358,7 @@ async function eliminarBolsa() {
   if (!confirm(`¿Eliminar la bolsa ${b.id} (${b.producto})?`)) return;
   const ok = await cloudTask('Eliminando la bolsa…', async () => {
     await gDelete('Bolsas', 'id', b.id);
-    if (b.foto) await gTrash(b.foto);
+    if (b.foto && !fotoEnUso(b.foto, b.id)) await gTrash(b.foto);
     return true;
   });
   if (!ok) return;
@@ -251,7 +367,6 @@ async function eliminarBolsa() {
   resetBolsaForm();
   refreshBolsasUI();
 }
-
 /* ---------------- Lista ---------------- */
 
 const bolsaLotes = (id) => cloud.lotes.filter((l) => parseBolsas(l.bolsas).includes(id)).map((l) => l.lote);
@@ -391,7 +506,10 @@ async function marcarBolsasEnUso() {
 
 function refreshBolsasUI() {
   if (!$('bList')) return;
-  if (!bolsaEdit) fillBolsaProductos($('bProducto').value);
+  if (!bolsaEdit) {
+    fillBolsaProductos($('bProducto').value);
+    fillProveedores($('bProveedor').value);
+  }
   renderBolsasList();
   renderLoteBolsas();
 }
@@ -426,6 +544,19 @@ function bindBolsasEvents() {
   $('bBuscar').addEventListener('input', renderBolsasList);
   $('bFiltro').addEventListener('change', renderBolsasList);
   $('loteBolsasTodas').addEventListener('change', renderLoteBolsas);
+
+  /* --- proveedores --- */
+  $('bProveedor').addEventListener('change', () => { $('bProvEditar').disabled = !$('bProveedor').value; });
+  $('bProvNuevo').addEventListener('click', () => openProvModal());
+  $('bProvEditar').addEventListener('click', () => { if ($('bProveedor').value) openProvModal($('bProveedor').value); });
+  $('pvOk').addEventListener('click', guardarProv);
+  $('pvCancelar').addEventListener('click', closeProvModal);
+  $('pvEliminar').addEventListener('click', eliminarProv);
+  $('provModal').addEventListener('click', (e) => { if (e.target === $('provModal')) closeProvModal(); });
+  $('provModal').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProvModal();
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') guardarProv();
+  });
 
   resetBolsaForm();
 }

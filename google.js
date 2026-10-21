@@ -39,6 +39,9 @@ const TABS = {
      de la foto de la etiqueta de la bolsa. */
   Bolsas:     ['id', 'ingreso', 'producto', 'proveedor', 'loteProveedor', 'peso', 'vencimiento',
                'precio', 'estado', 'foto', 'archivo', 'enlace', 'actualizado', 'por'],
+  /* Proveedores de las bolsas de granel. `nombre` es la clave: es lo que
+     queda escrito en la columna `proveedor` de cada bolsa. */
+  Proveedores: ['nombre', 'telefono', 'email', 'notas', 'actualizado', 'por'],
   /* Cuentas habilitadas para usar la app. `rol`: admin o usuario.
      `activo`: vacio o SI habilita; NO deshabilita sin borrar la fila.
      El script de apps-script/usuarios.gs sincroniza esta lista con los
@@ -54,7 +57,8 @@ const TABS = {
 const TEXT_COLS = {
   Catalogo: ['codigo', 'clave'],      // una clave como "00123" tambien perderia los ceros
   Lotes: ['lote', 'codigo', 'vencimiento'],
-  Bolsas: ['id', 'ingreso', 'loteProveedor', 'vencimiento']
+  Bolsas: ['id', 'ingreso', 'loteProveedor', 'vencimiento'],
+  Proveedores: ['telefono']
 };
 
 const G = {
@@ -367,6 +371,21 @@ async function gUpsert(tab, key, obj) {
     });
   }
   return !!prev;
+}
+
+/* Agrega varias filas al final en un solo pedido (por ejemplo, varias
+   bolsas iguales registradas juntas). No busca duplicados: para eso esta
+   gUpsert. */
+async function gAppendRows(tab, objs) {
+  const { headers } = await gReadTab(tab);
+  const stamp = gStamp();
+  const lines = objs.map((o) => {
+    const full = { ...o, ...stamp };
+    return headers.map((h) => (h in full) ? String(full[h] ?? '') : '');
+  });
+  await gFetch(gValuesUrl('A1', tab, ':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS'), {
+    method: 'POST', body: JSON.stringify({ values: lines })
+  });
 }
 
 async function gDeleteRow(tab, rowNumber) {

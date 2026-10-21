@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261021-1922">
+<html lang="es" data-version="20261021-1939">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261021-1922">
+<link rel="stylesheet" href="styles.css?v=20261021-1939">
 </head>
 <body data-tab="datos">
 
@@ -333,10 +333,17 @@
       <p class="hint">Cada bolsa de granel que llega. Despues se asocia a los lotes de
         etiquetas que salen de ella, en <b>Registro de lotes</b>.</p>
 
-      <label class="field req">
-        <span>Producto</span>
-        <select id="bProducto"></select>
-      </label>
+      <div class="row3">
+        <label class="field req">
+          <span>Producto</span>
+          <select id="bProducto"></select>
+        </label>
+        <!-- Solo al registrar: varias bolsas iguales, con ids seguidos. -->
+        <label class="field req" id="bCantidadField">
+          <span>Cantidad de bolsas</span>
+          <input type="number" id="bCantidad" min="1" max="50" step="1" inputmode="numeric" value="1">
+        </label>
+      </div>
       <div class="row2">
         <label class="field req">
           <span>Fecha de ingreso</span>
@@ -357,10 +364,14 @@
           <input type="number" id="bPrecio" min="0" step="0.01" inputmode="decimal" placeholder="1250">
         </label>
       </div>
-      <label class="field">
+      <div class="field">
         <span>Proveedor <span class="badge">opcional</span></span>
-        <input type="text" id="bProveedor" maxlength="80" placeholder="Nombre del proveedor">
-      </label>
+        <div class="prov-row">
+          <select id="bProveedor" aria-label="Proveedor"></select>
+          <button id="bProvNuevo" class="btn ghost small" type="button">Nuevo…</button>
+          <button id="bProvEditar" class="btn ghost small" type="button">Editar…</button>
+        </div>
+      </div>
       <label class="field">
         <span>Lote del proveedor <span class="badge">opcional</span></span>
         <input type="text" id="bLoteProv" maxlength="40" placeholder="El que trae la etiqueta de la bolsa">
@@ -495,6 +506,39 @@
   </div>
 </div>
 
+<!-- Modal de proveedor (bolsas.js) -->
+<div id="provModal" class="modal-bg no-print">
+  <div class="modal md">
+    <h4 id="pvTitulo">Nuevo proveedor</h4>
+    <label class="field req">
+      <span>Nombre</span>
+      <input type="text" id="pvNombre" maxlength="80" placeholder="Molinos del Sur">
+    </label>
+    <div class="row2">
+      <label class="field">
+        <span>Telefono <span class="badge">opcional</span></span>
+        <input type="text" id="pvTel" maxlength="40" inputmode="tel">
+      </label>
+      <label class="field">
+        <span>Mail <span class="badge">opcional</span></span>
+        <input type="text" id="pvEmail" maxlength="80" inputmode="email">
+      </label>
+    </div>
+    <label class="field">
+      <span>Notas <span class="badge">opcional</span></span>
+      <textarea id="pvNotas" rows="2" maxlength="300"></textarea>
+    </label>
+    <p class="hint">El nombre queda fijo una vez creado: es lo que guardan las bolsas.</p>
+    <em class="err" id="pvErr"></em>
+    <div class="modal-actions">
+      <button id="pvEliminar" class="btn ghost small danger" hidden>Eliminar</button>
+      <span style="flex:1"></span>
+      <button id="pvCancelar" class="btn ghost small">Cancelar</button>
+      <button id="pvOk" class="btn primary small">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal para pedir un texto (por ejemplo, el nombre de una planilla nueva) -->
 <div id="modal" class="modal-bg no-print">
   <div class="modal">
@@ -593,12 +637,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261021-1922"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261021-1922"></script>
-<script src="google.js?v=20261021-1922"></script>
-<script src="browser-api.js?v=20261021-1922"></script>
-<script src="cloud.js?v=20261021-1922"></script>
-<script src="bolsas.js?v=20261021-1922"></script>
-<script src="app.js?v=20261021-1922"></script>
+<script src="config.js?v=20261021-1939"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261021-1939"></script>
+<script src="google.js?v=20261021-1939"></script>
+<script src="browser-api.js?v=20261021-1939"></script>
+<script src="cloud.js?v=20261021-1939"></script>
+<script src="bolsas.js?v=20261021-1939"></script>
+<script src="app.js?v=20261021-1939"></script>
 </body>
 </html>
