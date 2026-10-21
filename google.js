@@ -150,7 +150,8 @@ async function gEnsureToken() {
 function gErrorText(status, body, what) {
   const msg = body && body.error && body.error.message;
   if (status === 403) return `Tu cuenta no tiene permiso de edicion sobre ${what}.`;
-  if (status === 404) return `No se encontro ${what}` + (what === 'la planilla' ? '. Revisá la URL o el ID.' : ', o tu cuenta no tiene acceso.');
+  // Google tambien responde 404 cuando la cuenta no tiene acceso al archivo.
+  if (status === 404) return `No se encontro ${what}, o tu cuenta no tiene acceso.`;
   if (status === 429) return 'Google limito las consultas por un momento. Probá de nuevo en un minuto.';
   return `Error de Google (${status})` + (msg ? ': ' + msg : '');
 }

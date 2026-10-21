@@ -18,6 +18,7 @@ const cloud = {
   ajustes: {},        // pestana Ajustes: clave -> valor
   loaded: 0,          // momento de la ultima carga completa
   rol: '',            // rol de la cuenta conectada en la pestana Usuarios
+  openError: '',      // por que no se pudo abrir la planilla (para mostrarlo)
   busy: false
 };
 const imgCache = new Map();          // id del archivo en Drive -> object URL
@@ -164,10 +165,12 @@ async function cloudOpen(id) {
     await gOpenSpreadsheet(id);
     await cloudLoadAll();
   } catch (err) {
+    cloud.openError = err.message || String(err);
     if (err.denied) handleDenied(err);
     else { G.sheet = null; syncCloudUI(); }
     throw err;
   }
+  cloud.openError = '';
   rememberSheetId(id);
   syncCloudUI();
 }
@@ -276,10 +279,19 @@ function openGModal() {
       fix.append('Para que todo el equipo use esta planilla, cargá su ID en config.js (spreadsheetId): ');
       fix.appendChild(el('code', null, G.sheet.id));
     }
+  } else if (sheetFixed()) {
+    /* La planilla esta fijada en config.js: si no hay planilla abierta es
+       porque fallo al abrirla. Casi siempre es la cuenta: se entro con una
+       que no tiene acceso (por ejemplo, otra cuenta de Google del celular). */
+    cur.textContent = 'No se pudo abrir la planilla del equipo' +
+      (cloud.openError ? `: ${cloud.openError}` : '.');
+    $('gFixed').textContent = 'Revisá que la cuenta de arriba sea una con acceso a la planilla. ' +
+      'Si no lo es, tocá Desconectar y entrá con la cuenta correcta.';
   } else {
     cur.textContent = 'Todavia no hay una planilla elegida. Pegá la URL de la planilla del equipo o creá una nueva.';
     $('gFixed').textContent = '';
   }
+  $('gRetry').hidden = !(sheetFixed() && !G.sheet);
   $('gChange').hidden = sheetFixed();
   $('gSheetInput').value = '';
   $('gErr').textContent = '';
@@ -898,6 +910,12 @@ function bindCloudEvents() {
     syncCloudUI('');
     closeGModal();
     toast('Desconectado de Google');
+  });
+  $('gRetry').addEventListener('click', async () => {
+    const ok = await cloudTask('Abriendo la planilla del equipo…', async () => { await cloudOpen(savedSheetId()); return true; });
+    if (ok) { closeGModal(); toast(`Conectado a "${G.sheet.title}"`); }
+    else if (G.token) openGModal();          // muestra el motivo actualizado
+    else closeGModal();                      // cuenta rechazada: queda la pantalla de ingreso
   });
   $('gClose').addEventListener('click', closeGModal);
   $('gModal').addEventListener('click', (e) => { if (e.target === $('gModal')) closeGModal(); });
