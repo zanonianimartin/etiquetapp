@@ -22,7 +22,9 @@ const G_SESSION_KEY = 'etiquetapp-google';
    La app ubica cada columna por el nombre de la fila 1, asi que se pueden
    reordenar o agregar columnas propias a mano sin romper nada. */
 const TABS = {
-  Catalogo:   ['codigo', 'tipo', 'producto', 'cantidad', 'unidad', 'ingredientes',
+  /* `clave`: texto de 5 caracteres del producto; `codigo` sale de ella con
+     TEXTO_A_DECIMAL (ver textoADecimal en app.js). */
+  Catalogo:   ['codigo', 'clave', 'tipo', 'producto', 'cantidad', 'unidad', 'ingredientes',
                'infoExtra', 'nutri', 'actualizado', 'por'],
   Plantillas: ['id', 'nombre', 'producto', 'cantidad', 'unidad', 'codigo', 'ingredientes',
                'infoExtra', 'nutri', 'diseno', 'actualizado', 'por'],
@@ -43,7 +45,7 @@ const TABS = {
 /* Columnas con formato de texto: sin esto, un codigo cargado a mano en la
    planilla pierde los ceros de adelante ("0495…" pasa a ser un numero). */
 const TEXT_COLS = {
-  Catalogo: ['codigo'],
+  Catalogo: ['codigo', 'clave'],      // una clave como "00123" tambien perderia los ceros
   Plantillas: ['codigo'],
   Lotes: ['lote', 'codigo', 'vencimiento']
 };

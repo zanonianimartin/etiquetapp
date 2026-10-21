@@ -138,7 +138,7 @@ la app la agrega sola al conectarse.
 
 | Pestaña | Una fila por | Columnas |
 |---|---|---|
-| `Catalogo` | código de barras | codigo, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
+| `Catalogo` | producto | codigo, clave, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
 | `Plantillas` | plantilla | id, nombre, producto, cantidad, unidad, codigo, ingredientes, infoExtra, nutri, diseno, actualizado, por |
 | `Lotes` | lote | lote, codigo, producto, vencimiento, imagen, archivo, enlace, actualizado, por |
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
@@ -230,13 +230,27 @@ Las plantillas guardadas antes de que existieran los campos *ingredientes* e *in
 adicional* no los traen. Al aplicarlas **se respeta lo que ya tenga la etiqueta** en vez de
 borrarlo; solo se limpian si la plantilla los guardó explícitamente vacíos.
 
-**Catálogo de códigos** (requiere conexión con Google). *Guardar etiqueta actual en el
-catálogo* archiva, bajo su código de barras, todo lo de la etiqueta **menos el lote y el
-vencimiento**: producto, cantidad, unidad, tipo de código, ingredientes, información
-adicional y tabla nutricional. Después, elegir ese código —desde el buscador del catálogo,
-por código o por nombre de producto, o directamente en el campo *Código de barras*—
-completa todo lo demás. Si el código ya está en el catálogo con otro producto, pide
-confirmación antes de reemplazarlo.
+**Catálogo de productos** (requiere conexión con Google). Cada producto se da de alta con
+**Nuevo producto…**, que pide una **clave de 5 caracteres** (por ejemplo `sal1k` o `pb250`).
+El código de barras sale de esa clave con la misma cuenta que la función
+`=TEXTO_A_DECIMAL()` de Apps Script de la planilla: cada carácter es un dígito en base 256 y
+el resultado se completa con ceros a la izquierda hasta 13 dígitos (`sal1k` →
+`0495555719531`). Se imprime como **CODE128**, porque ese último dígito no es un
+verificador EAN válido. La ventana muestra el código dibujado mientras se escribe la clave y
+no deja crear una clave repetida. La clave:
+
+- lleva exactamente 5 caracteres, sin tildes ni ñ y sin espacios al principio o al final;
+- distingue mayúsculas de minúsculas (`sal1k` y `SAL1K` dan códigos distintos; la app avisa
+  si se carga una que solo difiere en eso).
+
+El alta parte de los datos de la etiqueta seleccionada (producto, cantidad, unidad,
+ingredientes, información adicional y tabla nutricional) y al terminar deja el producto
+cargado en la etiqueta. *Guardar etiqueta actual en el catálogo* actualiza un producto que
+ya existe con lo que tenga la etiqueta (por ejemplo, una tabla nutricional nueva), sin
+tocar su clave.
+
+Elegir un producto —desde el buscador, por clave, código o nombre, o directamente en el
+campo *Código de barras*— completa todo **menos el lote y el vencimiento**.
 
 **Registro de lotes** (requiere conexión con Google). Asocia el lote de la etiqueta
 seleccionada con su código, producto y vencimiento, y opcionalmente con una imagen de

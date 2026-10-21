@@ -625,6 +625,16 @@ details.adv summary:hover{color:var(--txt)}
   background:var(--ok); margin-right:7px; vertical-align:1px;
 }
 .modal.md{width:420px}
+
+/* Vista previa del codigo de barras en el alta de producto: fondo blanco,
+   como va a salir impreso. */
+.prod-bc{
+  height:78px; margin:4px 0 2px; padding:8px 12px;
+  background:#fff; border-radius:6px; display:grid; place-items:center;
+}
+.prod-bc svg{height:100%; max-width:100%}
+.prod-bc .muted{color:#6b7280; text-align:center}
+#btnProdNew{margin:0 0 12px}
 .modal a{color:var(--accent)}
 
 /* Sin conexion, las secciones de la planilla se ven pero no se usan. */

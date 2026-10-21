@@ -265,6 +265,25 @@ function validateCode(value, type) {
   return { ok: true, msg: '' };
 }
 
+/* Codigo de barras de un producto a partir de su clave de 5 caracteres.
+   Es la misma cuenta que la funcion TEXTO_A_DECIMAL de Apps Script de la
+   planilla (cada caracter es un digito en base 256), para que la app y la
+   planilla den siempre el mismo numero. Se imprime como CODE128: el ultimo
+   digito no es un verificador EAN valido. 5 caracteres dan a lo sumo
+   0x7E7E7E7E7E = 543.288.098.430, muy por debajo de 2^53: sin perdida de
+   precision con numeros comunes de JavaScript. */
+const CLAVE_LEN = 5;
+
+function textoADecimal(texto) {
+  const str = String(texto ?? '');
+  if (!str) return { ok: false, codigo: '', msg: '' };
+  if (!/^[\x20-\x7E]*$/.test(str)) return { ok: false, codigo: '', msg: 'Solo letras sin tilde, numeros y signos comunes (sin ñ ni tildes).' };
+  if (str.length > CLAVE_LEN) return { ok: false, codigo: '', msg: `Maximo ${CLAVE_LEN} caracteres.` };
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 256 + str.charCodeAt(i);
+  return { ok: true, codigo: String(n).padStart(13, '0'), msg: '' };
+}
+
 /* Cache: en una tirada casi todas las etiquetas comparten el mismo codigo. */
 const bcCache = new Map();
 

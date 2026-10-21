@@ -85,7 +85,7 @@ const tplToRow = (t) => ({
 });
 
 const catFromRow = (r) => ({
-  codigo: String(r.codigo).trim(), tipo: r.tipo || '',
+  codigo: String(r.codigo).trim(), clave: r.clave || '', tipo: r.tipo || '',
   producto: r.producto || '', cantidad: r.cantidad || '', unidad: r.unidad || 'gr',
   ingredientes: r.ingredientes || '', infoExtra: r.infoExtra || '',
   nutri: cloneNutri(parseNutri(r.nutri))
@@ -362,19 +362,115 @@ function refreshCatalogUI() {
   cloud.catalog.forEach((c) => {
     const o = document.createElement('option');
     o.value = c.codigo;
-    o.label = c.producto;
+    o.label = [c.clave, c.producto].filter(Boolean).join(' · ');
     dl.appendChild(o);
   });
-  $('catCount').textContent = cloudReady() ? `${cloud.catalog.length} codigos` : '—';
+  $('catCount').textContent = cloudReady() ? `${cloud.catalog.length} productos` : '—';
 }
 
-/* Busca por codigo exacto o, si no hay, por nombre de producto. */
+/* Busca por codigo, por clave (respetando mayusculas: "sal1k" y "SAL1K" son
+   productos distintos) o por nombre de producto. */
 function findCatalog(text) {
-  const t = String(text || '').trim().toLowerCase();
+  const raw = String(text || '').trim();
+  const t = raw.toLowerCase();
   if (!t) return null;
   return cloud.catalog.find((c) => c.codigo.toLowerCase() === t)
+      || cloud.catalog.find((c) => c.clave === raw)
       || cloud.catalog.find((c) => c.producto.toLowerCase() === t)
       || null;
+}
+
+/* ---------------- Nuevo producto ---------------- */
+
+/* Revisa la clave mientras se escribe. Devuelve { ok, codigo, msg, aviso }:
+   `msg` bloquea la creacion, `aviso` solo informa. */
+function checkClave(clave) {
+  if (!clave) return { ok: false, codigo: '', msg: '' };
+  const r = textoADecimal(clave);
+  if (!r.ok) return r;
+  if (clave !== clave.trim()) return { ok: false, codigo: '', msg: 'Sin espacios al principio ni al final.' };
+  if (clave.length < CLAVE_LEN) {
+    const f = CLAVE_LEN - clave.length;
+    return { ok: false, codigo: '', msg: `${f > 1 ? `Faltan ${f} caracteres` : 'Falta 1 caracter'}: la clave lleva ${CLAVE_LEN}.` };
+  }
+  const existe = cloud.catalog.find((c) => c.codigo === r.codigo);
+  if (existe) return { ok: false, codigo: r.codigo, msg: `Esa clave ya es del producto "${existe.producto}".` };
+  const parecida = cloud.catalog.find((c) => c.clave && c.clave.toLowerCase() === clave.toLowerCase());
+  return {
+    ok: true, codigo: r.codigo, msg: '',
+    aviso: parecida ? `Ojo: ya existe la clave "${parecida.clave}" (${parecida.producto}); solo cambia en mayusculas y minusculas.` : ''
+  };
+}
+
+function paintProdClave() {
+  const r = checkClave($('pClave').value);
+  $('pClaveErr').textContent = r.msg;
+  $('pClave').closest('.field').classList.toggle('missing', !!r.msg);
+  const box = $('pBc');
+  box.innerHTML = '';
+  const svg = r.codigo ? makeBarcode(r.codigo, 'CODE128', true) : null;
+  if (svg && r.ok) box.appendChild(svg);
+  else box.appendChild(el('span', 'muted', `El codigo de barras aparece al completar los ${CLAVE_LEN} caracteres de la clave.`));
+  $('pCodigo').textContent = r.ok ? `Codigo ${r.codigo} · CODE128` + (r.aviso ? ` · ${r.aviso}` : '') : '';
+}
+
+/* Arranca con los datos de la etiqueta seleccionada: lo habitual es armar
+   la etiqueta, revisarla en la vista previa y despues darla de alta. */
+function openProdModal() {
+  if (!requireCloud()) return;
+  const l = currentLabel();
+  $('pClave').value = '';
+  $('pProducto').value = l.producto || '';
+  $('pCantidad').value = l.cantidad || '';
+  $('pUnidad').innerHTML = $('fUnidad').innerHTML;
+  $('pUnidad').value = l.unidad || 'gr';
+  $('pIngredientes').value = l.ingredientes || '';
+  $('pInfoExtra').value = l.infoExtra || '';
+  const filas = nutriVisible(l) ? nutriRows(l.nutri).length : 0;
+  $('pNutri').textContent = filas
+    ? `La tabla nutricional (${filas} elementos) se copia de la etiqueta seleccionada.`
+    : 'Sin tabla nutricional. Para agregarla despues: cargala en la etiqueta y usá "Guardar etiqueta actual en el catalogo".';
+  $('pErr').textContent = '';
+  paintProdClave();
+  $('prodModal').classList.add('show');
+  setTimeout(() => $('pClave').focus(), 30);
+}
+
+const closeProdModal = () => $('prodModal').classList.remove('show');
+
+async function createProduct() {
+  const clave = $('pClave').value;
+  const r = checkClave(clave);
+  if (!r.ok) {
+    $('pErr').textContent = r.msg || `Cargá la clave de ${CLAVE_LEN} caracteres.`;
+    return $('pClave').focus();
+  }
+  const producto = $('pProducto').value.trim();
+  const cantidad = $('pCantidad').value.trim();
+  if (!producto || !cantidad) { $('pErr').textContent = 'Cargá el producto y la cantidad.'; return; }
+
+  const l = currentLabel();
+  const entry = {
+    codigo: r.codigo, clave, tipo: 'CODE128',
+    producto, cantidad, unidad: $('pUnidad').value,
+    ingredientes: $('pIngredientes').value, infoExtra: $('pInfoExtra').value.trim(),
+    nutri: cloneNutri(nutriVisible(l) ? l.nutri : null)
+  };
+  const ok = await cloudTask('Creando producto…', async () => {
+    // Otra persona pudo haber creado la misma clave desde que se cargo el catalogo.
+    const { rows } = await gReadTab('Catalogo');
+    const otro = rows.find((x) => String(x.codigo).trim() === entry.codigo);
+    if (otro) throw new Error(`Otra persona acaba de crear "${otro.producto}" con esa clave. Elegí otra.`);
+    await gUpsert('Catalogo', 'codigo', catToRow(entry));
+    return true;
+  });
+  if (!ok) return;
+  cloud.catalog.push(entry);
+  refreshCatalogUI();
+  closeProdModal();
+  $('catSearch').value = entry.codigo;
+  applyCatalog(entry);
+  toast(`Producto "${producto}" creado · codigo ${entry.codigo}`);
 }
 
 /* Completa todo menos lote y vencimiento, que son de cada tirada. */
@@ -659,6 +755,17 @@ function bindCloudEvents() {
   $('catSearch').addEventListener('keydown', (e) => { if (e.key === 'Enter') aplicarBusqueda(); });
   $('btnCatSave').addEventListener('click', saveToCatalog);
   $('btnCatDelete').addEventListener('click', deleteFromCatalog);
+
+  /* --- nuevo producto --- */
+  $('btnProdNew').addEventListener('click', openProdModal);
+  $('pClave').addEventListener('input', paintProdClave);
+  $('pOk').addEventListener('click', createProduct);
+  $('pCancel').addEventListener('click', closeProdModal);
+  $('prodModal').addEventListener('click', (e) => { if (e.target === $('prodModal')) closeProdModal(); });
+  $('prodModal').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProdModal();
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') createProduct();
+  });
 
   /* Elegir (o terminar de escribir) un codigo del catalogo en el campo de la
      etiqueta completa el resto. Si la etiqueta ya tiene esos datos no hace

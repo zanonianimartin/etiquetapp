@@ -181,12 +181,13 @@
   <aside class="panel right no-print">
 
     <section class="group">
-      <h3>Catalogo de codigos <span id="catCount" class="badge">—</span></h3>
+      <h3>Catalogo de productos <span id="catCount" class="badge">—</span></h3>
       <p class="hint cloud-msg">Conectate con Google para usar el catalogo compartido.</p>
       <div class="cloud-body">
+        <button id="btnProdNew" class="btn primary small wide">Nuevo producto…</button>
         <label class="field">
-          <span>Codigo o producto</span>
-          <input type="text" id="catSearch" list="catList" placeholder="7791234567898" maxlength="80">
+          <span>Clave, codigo o producto</span>
+          <input type="text" id="catSearch" list="catList" placeholder="sal1k" maxlength="80">
         </label>
         <datalist id="catList"></datalist>
         <div class="row2">
@@ -194,7 +195,9 @@
           <button id="btnCatDelete" class="btn ghost small danger">Eliminar</button>
         </div>
         <button id="btnCatSave" class="btn ghost small wide">Guardar etiqueta actual en el catalogo</button>
-        <p class="hint">Completa <b>todo menos el lote y el vencimiento</b>. Tambien se aplica al
+        <p class="hint">Cada producto tiene una <b>clave de 5 caracteres</b>; su codigo de barras
+          sale de ella (igual que <code>=TEXTO_A_DECIMAL()</code> en la planilla). Elegir un
+          producto completa <b>todo menos el lote y el vencimiento</b>. Tambien se aplica al
           elegir un codigo del catalogo en el campo <b>Codigo de barras</b>.</p>
       </div>
     </section>
@@ -385,6 +388,51 @@ Miel pura | 1 | kg | L-002 | 06/2028 | 7790000000010 | 4"></textarea>
       <span style="flex:1"></span>
       <button id="gReload" class="btn ghost small">Actualizar datos</button>
       <button id="gClose" class="btn primary small">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de alta de producto -->
+<div id="prodModal" class="modal-bg no-print">
+  <div class="modal md">
+    <h4>Nuevo producto</h4>
+    <label class="field req">
+      <span>Clave (5 caracteres)</span>
+      <input type="text" id="pClave" maxlength="5" spellcheck="false" autocomplete="off" placeholder="sal1k">
+    </label>
+    <em class="err" id="pClaveErr"></em>
+    <div class="prod-bc" id="pBc"></div>
+    <p class="hint" id="pCodigo"></p>
+
+    <label class="field req">
+      <span>Producto</span>
+      <input type="text" id="pProducto" maxlength="80" placeholder="Ej: Sal fina yodada">
+    </label>
+    <div class="row3">
+      <label class="field req">
+        <span>Cantidad</span>
+        <input type="text" id="pCantidad" maxlength="12" placeholder="1">
+      </label>
+      <label class="field req">
+        <span>Unidad</span>
+        <select id="pUnidad"></select>
+      </label>
+    </div>
+    <label class="field">
+      <span>Ingredientes <span class="badge">opcional</span></span>
+      <textarea id="pIngredientes" rows="2" maxlength="400" spellcheck="false"></textarea>
+    </label>
+    <label class="field">
+      <span>Informacion adicional <span class="badge">opcional</span></span>
+      <input type="text" id="pInfoExtra" maxlength="120">
+    </label>
+    <p class="hint" id="pNutri"></p>
+
+    <em class="err" id="pErr"></em>
+    <div class="modal-actions">
+      <span style="flex:1"></span>
+      <button id="pCancel" class="btn ghost small">Cancelar</button>
+      <button id="pOk" class="btn primary small">Crear producto</button>
     </div>
   </div>
 </div>
