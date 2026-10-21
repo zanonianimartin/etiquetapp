@@ -173,13 +173,24 @@ async function gFetch(url, opts = {}, retry = true) {
   if (typeof opts.body === 'string') headers['Content-Type'] = 'application/json';
   Object.assign(headers, opts.headers || {});
   let res;
-  try {
-    res = await fetch(url, { method: opts.method || 'GET', body: opts.body, headers });
-  } catch {
-    /* El navegador no recibio respuesta: sin internet, un bloqueador de
-       anuncios que freno el pedido, o Google corto la conexion. */
-    throw new Error(`No se pudo comunicar con Google${opts.what ? ` (${opts.what})` : ''}. ` +
-      'Revisá internet y probá de nuevo. Si sigue, probá desactivando el bloqueador de anuncios del navegador para este sitio.');
+  /* Sin respuesta del navegador (sin internet, un bloqueador de anuncios, o
+     una conexion que se corto a mitad de camino, tipico al subir fotos con
+     datos moviles): se reintenta `opts.retries` veces antes de rendirse. */
+  for (let intento = 0; ; intento++) {
+    try {
+      res = await fetch(url, { method: opts.method || 'GET', body: opts.body, headers });
+      break;
+    } catch (e) {
+      if (intento < (opts.retries || 0)) {
+        await new Promise((r) => setTimeout(r, 1500 * (intento + 1)));
+        continue;
+      }
+      const err = new Error(`No se pudo comunicar con Google${opts.what ? ` (${opts.what})` : ''}. ` +
+        'Revisá internet y probá de nuevo. Si sigue, probá desactivando el bloqueador de anuncios del navegador para este sitio.' +
+        ` [detalle: ${(e && e.message) || e}]`);
+      err.network = true;
+      throw err;
+    }
   }
   if (res.status === 401 && retry) {       // token revocado o vencido antes de tiempo
     G.exp = 0;
@@ -420,12 +431,14 @@ async function gUploadImage(file, name, folderId) {
     body: JSON.stringify({ name, parents: [folderId] }),
     headers: { 'X-Upload-Content-Type': tipo, 'X-Upload-Content-Length': String(file.size) },
     raw: true,
-    what: 'la carpeta de imagenes'
+    retries: 2,
+    what: 'al abrir la subida de la imagen'
   });
   const sesion = inicio.headers.get('Location');
-  if (!sesion) throw new Error('Google no abrio la subida de la imagen. Probá de nuevo.');
+  if (!sesion) throw new Error('Google no abrio la subida de la imagen (no devolvio la direccion de subida). Probá de nuevo.');
 
-  const subida = await gFetch(sesion, { method: 'PUT', body: file, what: 'la subida de la imagen' });
+  // Reenviar el archivo completo a la misma sesion es valido mientras no haya terminado.
+  const subida = await gFetch(sesion, { method: 'PUT', body: file, retries: 3, what: 'al enviar la imagen' });
   if (subida && subida.webViewLink) return subida;
   // Por las dudas: si la respuesta no trajo el enlace, se pide aparte.
   return gFetch(`${DRIVE_API}/${subida.id}?fields=id,name,webViewLink&${ALL_DRIVES}`, { what: 'la imagen' });

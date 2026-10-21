@@ -793,6 +793,35 @@ async function imageFolder() {
   return folder.id;
 }
 
+const tamano = (bytes) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+/* Achica las fotos de camara antes de subirlas: una de celular pesa 4-8 MB y
+   con datos moviles la subida se corta facil. Para un registro alcanzan
+   2560 px de lado; en JPEG al 85 % queda en ~1 MB. Las chicas, y las que no
+   son fotos (PNG con transparencia, GIF, SVG), se suben tal cual. Si algo
+   falla al achicar, tambien se sube la original. */
+const PHOTO_MAX_PX = 2560;
+const PHOTO_MIN_BYTES = 1.5 * 1024 * 1024;
+
+async function shrinkPhoto(file) {
+  if (!/^image\/(jpeg|jpg|webp|heic|heif)$/i.test(file.type) || file.size < PHOTO_MIN_BYTES) return file;
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });  // respeta la rotacion de la camara
+    const k = Math.min(1, PHOTO_MAX_PX / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(bmp.width * k);
+    cv.height = Math.round(bmp.height * k);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    bmp.close();
+    const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    const nombre = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+    return new File([blob], nombre, { type: 'image/jpeg', lastModified: file.lastModified });
+  } catch {
+    return file;
+  }
+}
+
 async function attachLoteImage() {
   if (!requireCloud()) return;
   const lote = currentLote();
@@ -801,14 +830,15 @@ async function attachLoteImage() {
   // navegador ya no considera que hubo un clic y bloquea el popup de Google.
   try { await gEnsureToken(); } catch (err) { return toast(err.message, true); }
 
-  const file = await pickFile('image/*');
-  if (!file) return;
-  if (!file.type.startsWith('image/')) return toast('El archivo no es una imagen.', true);
-  if (file.size > IMG_MAX) return toast('La imagen es demasiado grande (max 20 MB).', true);
+  const original = await pickFile('image/*');
+  if (!original) return;
+  if (!original.type.startsWith('image/')) return toast('El archivo no es una imagen.', true);
+  if (original.size > IMG_MAX) return toast('La imagen es demasiado grande (max 20 MB).', true);
+  const file = await shrinkPhoto(original);
 
   // Se copia el id ahora: writeLote actualiza el registro en el lugar.
   const anterior = (findLote(lote) || {}).imagen;
-  const ok = await cloudTask('Subiendo imagen a Drive…', async () => {
+  const ok = await cloudTask(`Subiendo imagen a Drive (${tamano(file.size)})…`, async () => {
     const folder = await imageFolder();
     const subida = await gUploadImage(file, `Lote ${lote} - ${file.name}`, folder);
     imgCache.set(subida.id, URL.createObjectURL(file));
