@@ -17,5 +17,5 @@ window.ETIQUETAPP_CONFIG = {
      Con este valor cargado todos los usuarios trabajan sobre esa planilla y
      la app no ofrece elegir ni crear otra. Vacio solo durante la puesta en
      marcha: deja crear la planilla una vez para despues copiar su ID aca. */
-  spreadsheetId: ''
+  spreadsheetId: '1b7bx9Dhv05bcDEleWOJxZE0I44Xy6iwoNVS8Onmu0Bs'
 };
