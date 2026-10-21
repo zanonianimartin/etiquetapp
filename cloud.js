@@ -1,5 +1,5 @@
 /* ============================================================
-   EtiquetApp — catalogo, plantillas y lotes en la planilla
+   EtiquetApp — catalogo y lotes en la planilla
    ============================================================
 
    Interfaz de los datos compartidos. El acceso a Google esta en google.js;
@@ -68,23 +68,6 @@ function parseNutri(txt) {
   try { return txt ? JSON.parse(txt) : null; } catch { return null; }
 }
 
-const tplFromRow = (r) => ({
-  id: r.id,
-  name: r.nombre || r.producto || '(sin nombre)',
-  producto: r.producto || '', cantidad: r.cantidad || '', unidad: r.unidad || 'gr',
-  codigo: r.codigo || '', ingredientes: r.ingredientes || '', infoExtra: r.infoExtra || '',
-  nutri: cloneNutri(parseNutri(r.nutri)),
-  design: r.diseno || ''
-});
-
-const tplToRow = (t) => ({
-  id: t.id, nombre: t.name,
-  producto: t.producto, cantidad: t.cantidad, unidad: t.unidad, codigo: t.codigo,
-  ingredientes: t.ingredientes || '', infoExtra: t.infoExtra || '',
-  nutri: JSON.stringify(cloneNutri(t.nutri)),
-  diseno: t.design || ''
-});
-
 const catFromRow = (r) => ({
   codigo: String(r.codigo).trim(), clave: r.clave || '', tipo: r.tipo || '',
   producto: r.producto || '', cantidad: r.cantidad || '', unidad: r.unidad || 'gr',
@@ -141,21 +124,16 @@ function handleDenied(err) {
 
 async function cloudLoadAll() {
   await gEnsureToken();               // una sola renovacion para todas las lecturas
-  const [usu, cat, tpl, lot, aju] = await Promise.all([
-    gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Plantillas'), gReadTab('Lotes'),
-    gReadTab('Ajustes')
+  const [usu, cat, lot, aju] = await Promise.all([
+    gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Lotes'), gReadTab('Ajustes')
   ]);
   cloud.rol = await checkAccess(usu.rows);
   cloud.usuarios = usu.rows.filter((r) => String(r.email || '').trim() && esActivo(r.activo));
   cloud.ajustes = Object.fromEntries(aju.rows.map((r) => [String(r.clave).trim(), String(r.valor || '').trim()]));
   cloud.catalog = cat.rows.filter((r) => String(r.codigo || '').trim()).map(catFromRow);
-  // Las plantillas se identifican por id: una fila cargada a mano sin id se ignora.
-  state.templates = tpl.rows.filter((r) => String(r.id || '').trim()).map(tplFromRow);
   cloud.lotes = lot.rows.filter((r) => String(r.lote || '').trim()).map(loteFromRow);
   cloud.loaded = Date.now();
 
-  const sel = $('tplSaved').value;
-  refreshTemplateList(state.templates.some((t) => t.id === sel) ? sel : undefined);
   refreshCatalogUI();
   refreshLoteUI();
 }
@@ -189,7 +167,6 @@ async function cloudRefresh() {
 }
 
 function cloudClear() {
-  state.templates = [];
   cloud.catalog = [];
   cloud.lotes = [];
   cloud.usuarios = [];
@@ -199,7 +176,6 @@ function cloudClear() {
   syncPending = null;
   imgCache.forEach((url) => URL.revokeObjectURL(url));
   imgCache.clear();
-  refreshTemplateList();
   refreshCatalogUI();
   refreshLoteUI();
 }
@@ -212,7 +188,7 @@ function syncCloudUI(msg, info = false) {
   const b = $('btnGoogle');
   b.classList.toggle('on', on);
   b.textContent = on ? (G.email || 'Conectado') : G.token ? 'Elegir planilla' : 'Conectar con Google';
-  b.title = on ? `Planilla: ${G.sheet.title}` : 'Guardar catalogo, plantillas y lotes en Google Sheets';
+  b.title = on ? `Planilla: ${G.sheet.title}` : 'Guardar catalogo y lotes en Google Sheets';
 
   const gl = $('gateLogin');
   gl.textContent = G.token ? 'Elegir planilla' : 'Iniciar sesion con Google';
@@ -325,47 +301,6 @@ async function createSheet() {
   if (!ok) return;
   openGModal();
   toast('Planilla creada. Falta cargar su ID en config.js para que todo el equipo use esta.');
-}
-
-/* ---------------- Plantillas ---------------- */
-
-async function cloudSaveTemplate(tpl) {
-  if (!requireCloud()) return false;
-  return !!await cloudTask('Guardando plantilla…', async () => {
-    await gUpsert('Plantillas', 'id', tplToRow(tpl));
-    return true;
-  });
-}
-
-async function cloudDeleteTemplate(id) {
-  if (!requireCloud()) return false;
-  return !!await cloudTask('Eliminando plantilla…', async () => {
-    await gDelete('Plantillas', 'id', id);
-    return true;
-  });
-}
-
-/* Sube las plantillas de un proyecto abierto que no esten en la planilla
-   (se comparan por nombre). */
-async function cloudImportTemplates(list) {
-  if (!cloudReady()) {
-    toast('El proyecto trae plantillas: conectate con Google y volvé a abrirlo para subirlas.', true);
-    return;
-  }
-  const nombres = new Set(state.templates.map((t) => t.name.toLowerCase()));
-  const nuevas = list.filter((t) => t && t.name && !nombres.has(String(t.name).toLowerCase()));
-  if (!nuevas.length) return;
-  if (!confirm(`El proyecto trae ${nuevas.length} plantilla(s) que no estan en la planilla. ¿Subirlas?`)) return;
-
-  const ok = await cloudTask('Subiendo plantillas…', async () => {
-    for (const t of nuevas) {
-      const tpl = { ...emptyLabel(), ...t, id: t.id || 't' + Date.now().toString(36), nutri: cloneNutri(t.nutri) };
-      await gUpsert('Plantillas', 'id', tplToRow(tpl));
-    }
-    await cloudLoadAll();
-    return true;
-  });
-  if (ok) toast(`${nuevas.length} plantilla(s) subidas a la planilla`);
 }
 
 /* ---------------- Catalogo de codigos ---------------- */

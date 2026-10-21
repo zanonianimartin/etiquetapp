@@ -2,7 +2,7 @@
 
 Aplicación web para armar hojas A4 de etiquetas y mandarlas a imprimir. Es un sitio
 estático (HTML + JavaScript, sin servidor ni compilación) pensado para publicarse en
-GitHub Pages. El catálogo de códigos, las plantillas y el registro de lotes se guardan en
+GitHub Pages. El catálogo de productos y el registro de lotes se guardan en
 una única planilla de Google Sheets que usa todo el equipo, y las imágenes de los lotes en
 una carpeta de Google Drive, con login de Google.
 
@@ -112,13 +112,6 @@ Como las cuentas se agregan desde la planilla, conviene publicar la app en Googl
 usuario de prueba. Sin la verificación de Google, la pantalla de login sigue mostrando el
 aviso de "app no verificada" y admite hasta 100 cuentas.
 
-### Migrar las plantillas de la versión de escritorio
-
-La versión Electron guardaba las plantillas y el logo en
-`%APPDATA%\etiquetapp\etiquetapp-config.json`. Se convierten a un proyecto (`.etq.json`)
-y se abre con **Abrir** estando conectado: la app ofrece subir a la planilla las
-plantillas que no estén (las compara por nombre) y toma el logo.
-
 ### Probar en la PC
 
 El login de Google no funciona abriendo `index.html` con doble clic: hace falta servir la
@@ -132,21 +125,19 @@ y abrir `http://localhost:8080` (tiene que estar entre los orígenes autorizados
 
 ## La planilla
 
-La app crea cinco pestañas y encuentra cada columna por el nombre de la fila 1, así que se
+La app crea cuatro pestañas y encuentra cada columna por el nombre de la fila 1, así que se
 pueden reordenar columnas o agregar columnas propias. Si falta una pestaña o una columna,
 la app la agrega sola al conectarse.
 
 | Pestaña | Una fila por | Columnas |
 |---|---|---|
 | `Catalogo` | producto | codigo, clave, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
-| `Plantillas` | plantilla | id, nombre, producto, cantidad, unidad, codigo, ingredientes, infoExtra, nutri, diseno, actualizado, por |
 | `Lotes` | lote | lote, codigo, producto, vencimiento, imagen, archivo, enlace, actualizado, por |
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
 - `nutri` es la tabla nutricional en formato JSON. Conviene editarla desde la app.
 - `actualizado` y `por` se completan solos con la fecha y el mail de quien guardó.
-- Las plantillas se identifican por `id`: una fila agregada a mano sin `id` se ignora.
 - En `Lotes`, `imagen` es el ID del archivo en Drive, `archivo` el nombre original de la foto
   y `enlace` el link para abrirla desde la planilla.
 - En `Ajustes`, `carpetaImagenes` es el ID de la carpeta de Drive de las imágenes.
@@ -192,8 +183,8 @@ quedan vacíos:
   del código de barras**. Pensado para leyendas del tipo
   "Industria Uruguaya" o "Conservar en lugar fresco y seco".
 
-Los dos describen al producto y no a la tirada, así que se guardan junto con las
-**plantillas** (a diferencia del lote y el vencimiento).
+Los dos describen al producto y no a la tirada, así que se guardan en el **catálogo de
+productos** (a diferencia del lote y el vencimiento).
 
 **Cantidad de etiquetas.** Se escribe cuántas se quieren imprimir (1 a 2000) y la app arma
 las hojas que hagan falta, replicando los datos automáticamente en cada etiqueta. Hay accesos
@@ -227,17 +218,6 @@ cantidades significativas de …"— como punto de partida: queda completarla co
 energético y/o los nutrientes que correspondan a cada producto. Si la tabla está
 desactivada no se imprime ninguna de las dos.
 
-**Plantillas guardadas.** *Guardar datos actuales como plantilla* archiva producto, cantidad,
-unidad, código, ingredientes, información adicional y tabla nutricional con un
-nombre. **No guarda el lote ni el
-vencimiento**, porque cambian en cada tirada. Al aplicar una plantilla se completan los datos
-del producto y hay que cargar esos dos campos. Las plantillas se guardan en la planilla de
-Google, así que las ve todo el equipo; para usarlas hay que estar conectado. Guardar con un
-nombre que ya existe (sin distinguir mayúsculas) actualiza esa plantilla.
-
-Las plantillas guardadas antes de que existieran los campos *ingredientes* e *información
-adicional* no los traen. Al aplicarlas **se respeta lo que ya tenga la etiqueta** en vez de
-borrarlo; solo se limpian si la plantilla los guardó explícitamente vacíos.
 
 **Catálogo de productos** (requiere conexión con Google). Cada producto se da de alta con
 **Nuevo producto…**, que pide una **clave de 5 caracteres** (por ejemplo `sal1k` o `pb250`).
@@ -301,7 +281,7 @@ ingredientes sea corta. Si falta uno de los dos —no hay tabla, o no hay ingred
 quede **ocupa el ancho completo** en lugar de dejar media etiqueta vacía. Conviene vigilar el
 aviso de contenido recortado cuando la tabla nutricional es larga.
 
-Las plantillas, configuraciones o proyectos que traigan otro diseño (de versiones
+Las configuraciones o proyectos que traigan otro diseño (de versiones
 anteriores, que tenían seis) se abren con este. El código de los otros cinco diseños sigue en
 `app.js` y `styles.css`, pero ya no se puede elegir.
 
@@ -349,7 +329,7 @@ styles.css                   UI + hoja A4 en mm + estilos de impresión
 app.js                       estado, render de etiquetas, códigos de barras
 config.js                    ID de cliente de Google y planilla por defecto
 google.js                    login de Google y acceso a las APIs de Sheets y Drive
-cloud.js                     catálogo, plantillas y lotes contra la planilla
+cloud.js                     catálogo y lotes contra la planilla
 browser-api.js               archivos, impresión y configuración local del navegador
 apps-script/usuarios.gs      script de la planilla: permisos según la pestaña Usuarios
 assets/logo-xilo.png         logo por defecto (Xilo)

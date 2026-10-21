@@ -44,8 +44,8 @@ const SHEET_TEMPLATES = [
 ];
 
 /* Solo se ofrece "Dos columnas". El render de los otros disenos (a-e) sigue
-   en paintLabel y styles.css, pero ya no se puede elegir: una configuracion,
-   plantilla o proyecto que traiga otro diseno se abre con este. */
+   en paintLabel y styles.css, pero ya no se puede elegir: una configuracion
+   o un proyecto que traiga otro diseno se abre con este. */
 const DESIGN = 'f';
 const DESIGNS = [
   { id: 'f', name: 'Dos columnas' }
@@ -155,7 +155,6 @@ let state = {
   qty: 8,             // cuantas etiquetas se imprimen
   sel: 0,             // indice dentro de items
   applyAll: true,
-  templates: [],
   zoom: 0.7
 };
 
@@ -852,74 +851,12 @@ function markMissing() {
   if (r.msg) $('fCodigo').closest('.field').classList.add('missing');
 }
 
-/* ============================================================
-   Plantillas guardadas
-   ============================================================ */
-
-function refreshTemplateList(selectId) {
-  const sel = $('tplSaved');
-  sel.innerHTML = '<option value="">— ninguna —</option>';
-  state.templates.forEach((t) => {
-    const o = document.createElement('option');
-    o.value = t.id;
-    o.textContent = t.name;
-    sel.appendChild(o);
-  });
-  if (selectId) sel.value = selectId;
-}
-
-async function saveTemplate(name) {
-  const l = currentLabel();
-  const tpl = {
-    id: 't' + Date.now().toString(36),
-    name,
-    producto: l.producto,
-    cantidad: l.cantidad,
-    unidad: l.unidad,
-    codigo: l.codigo,
-    ingredientes: l.ingredientes,     // describen al producto, no a la tirada
-    infoExtra: l.infoExtra,
-    nutri: cloneNutri(l.nutri),       // la tabla describe al producto, se guarda
-    design: state.cfg.template
-    // lote y vencimiento quedan fuera a proposito: cambian en cada tirada
-  };
-  const dup = state.templates.findIndex((t) => t.name.toLowerCase() === name.toLowerCase());
-  if (dup >= 0) tpl.id = state.templates[dup].id;
-  if (!await cloudSaveTemplate(tpl)) return;
-  if (dup >= 0) state.templates[dup] = tpl;
-  else state.templates.push(tpl);
-  refreshTemplateList(tpl.id);
-  toast(dup >= 0 ? `Plantilla "${name}" actualizada` : `Plantilla "${name}" guardada`);
-}
-
 /* Completa con `patch` la etiqueta seleccionada, o todas si esta tildado
    "Aplicar los cambios a todas las etiquetas". */
 function applyPatch(patch) {
   if (state.applyAll) state.items = state.items.map((l) => cloneLabel({ ...l, ...patch }));
   else state.items[state.sel] = cloneLabel({ ...state.items[state.sel], ...patch });
 }
-
-function applyTemplate(id) {
-  const t = state.templates.find((x) => x.id === id);
-  if (!t) return toast('Elegi una plantilla de la lista.', true);
-  const patch = {
-    producto: t.producto, cantidad: t.cantidad, unidad: t.unidad, codigo: t.codigo,
-    nutri: cloneNutri(t.nutri)
-  };
-  /* Las plantillas guardadas antes de que existieran estos campos no traen la
-     clave. En ese caso se respeta lo que ya tenga la etiqueta: borrarlo haria
-     desaparecer lo que el usuario acaba de escribir. Si la clave esta pero
-     vacia, es que se guardo vacia a proposito y si corresponde limpiarla. */
-  if ('ingredientes' in t) patch.ingredientes = t.ingredientes || '';
-  if ('infoExtra' in t) patch.infoExtra = t.infoExtra || '';
-  applyPatch(patch);
-  // El diseno que guarde la plantilla se ignora: hay uno solo (DESIGN).
-
-  renderSheets();
-  fillForm();
-  toast(`Plantilla "${t.name}" aplicada · falta cargar lote y vencimiento`);
-}
-
 /* Mide la proporcion real del archivo para que la caja del logo calce
    justa. Un SVG sin tamano intrinseco devuelve 0: ahi se usa 3:1. */
 function medirLogo(src, luego) {
@@ -1056,8 +993,8 @@ function toast(msg, isErr = false) {
   toastTimer = setTimeout(() => { t.className = 'toast'; }, 2800);
 }
 
-/* Configuracion local de este navegador. Las plantillas no van aca: viven en
-   la planilla de Google, compartidas con el equipo (ver cloud.js). */
+/* Configuracion local de este navegador. Los datos compartidos (catalogo,
+   lotes) viven en la planilla de Google (ver cloud.js). */
 let persistTimer = null;
 function persist() {
   clearTimeout(persistTimer);
@@ -1323,33 +1260,6 @@ function bindEvents() {
   enableWheelStep('seqFrom', 1, 0, 999999);
   enableWheelStep('seqPad', 1, 1, 10);
 
-  /* --- plantillas guardadas --- */
-  $('btnTplSave').addEventListener('click', async () => {
-    if (!requireCloud()) return;
-    const l = currentLabel();
-    if (!String(l.producto || '').trim()) return toast('Cargá al menos el producto.', true);
-    const name = await askText('Guardar plantilla', l.producto.slice(0, 40));
-    if (name === null) return;
-    const clean = name.trim();
-    if (!clean) return toast('El nombre no puede estar vacio.', true);
-    saveTemplate(clean);
-  });
-
-  $('btnTplApply').addEventListener('click', () => applyTemplate($('tplSaved').value));
-  $('tplSaved').addEventListener('dblclick', () => applyTemplate($('tplSaved').value));
-
-  $('btnTplDelete').addEventListener('click', async () => {
-    const id = $('tplSaved').value;
-    const t = state.templates.find((x) => x.id === id);
-    if (!t) return toast('Elegi una plantilla de la lista.', true);
-    // Es un dato compartido: borrarla la saca para todo el equipo.
-    if (!confirm(`¿Eliminar la plantilla "${t.name}" de la planilla?`)) return;
-    if (!await cloudDeleteTemplate(id)) return;
-    state.templates = state.templates.filter((x) => x.id !== id);
-    refreshTemplateList();
-    toast(`Plantilla "${t.name}" eliminada`);
-  });
-
   /* --- tabla nutricional --- */
   $('btnNutri').addEventListener('click', openNutri);
   $('nutriOk').addEventListener('click', saveNutri);
@@ -1449,7 +1359,7 @@ function bindEvents() {
   $('btnSave').addEventListener('click', async () => {
     const ok = await window.api.saveProject({
       version: 2, cfg: state.cfg, logo: state.logo,
-      items: state.items, qty: state.qty, templates: state.templates
+      items: state.items, qty: state.qty
     });
     if (ok) toast('Proyecto guardado');
   });
@@ -1470,10 +1380,6 @@ function bindEvents() {
     buildDesignPicker(); syncControls(); syncQty();
     renderSheets(); fillForm(); persist();
     toast('Proyecto abierto');
-    /* Las plantillas del archivo no reemplazan a las de la planilla: se
-       ofrece subir las que falten (asi se migran las de la version de
-       escritorio). */
-    if (Array.isArray(data.templates) && data.templates.length) cloudImportTemplates(data.templates);
   });
 
   $('btnPrint').addEventListener('click', async () => {
@@ -1721,7 +1627,6 @@ async function init() {
 
   medirLogo(state.logo, renderSheets);
   buildDesignPicker();
-  refreshTemplateList();
   syncControls();
   syncQty();
   bindEvents();

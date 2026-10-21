@@ -5,7 +5,7 @@
    Reemplaza al puente de Electron (window.api) con APIs del navegador:
    mismos nombres y mismas respuestas, asi app.js no cambia de forma.
    La configuracion local (diseno, logo, zoom) queda en localStorage; los
-   datos compartidos (catalogo, plantillas, lotes) van a Google Sheets. */
+   datos compartidos (catalogo, lotes) van a Google Sheets. */
 
 const CONFIG_KEY = 'etiquetapp-config';
 const LOGO_MAX = 3 * 1024 * 1024;   // en base64 crece 4/3 y localStorage ronda los 5 MB

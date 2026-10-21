@@ -215,25 +215,6 @@
     </section>
 
     <section class="group">
-      <h3>Plantillas guardadas</h3>
-      <p class="hint cloud-msg">Conectate con Google para usar las plantillas compartidas.</p>
-      <div class="cloud-body">
-        <label class="field">
-          <span>Plantilla</span>
-          <select id="tplSaved"><option value="">— ninguna —</option></select>
-        </label>
-        <div class="row2">
-          <button id="btnTplApply" class="btn small">Aplicar</button>
-          <button id="btnTplDelete" class="btn ghost small danger">Eliminar</button>
-        </div>
-        <button id="btnTplSave" class="btn ghost small wide">Guardar datos actuales como plantilla</button>
-        <p class="hint">La plantilla guarda producto, cantidad, unidad, codigo, ingredientes,
-          informacion adicional y tabla nutricional.
-          <b>No guarda el lote ni el vencimiento</b>, que se cargan en cada tirada.</p>
-      </div>
-    </section>
-
-    <section class="group">
       <h3>Datos de la etiqueta <span id="selInfo" class="badge">—</span></h3>
 
       <label class="field req">
@@ -452,10 +433,10 @@ Miel pura | 1 | kg | L-002 | 06/2028 | 7790000000010 | 4"></textarea>
   </div>
 </div>
 
-<!-- Modal para nombrar plantillas -->
+<!-- Modal para pedir un texto (por ejemplo, el nombre de una planilla nueva) -->
 <div id="modal" class="modal-bg no-print">
   <div class="modal">
-    <h4 id="modalTitle">Guardar plantilla</h4>
+    <h4 id="modalTitle">Nombre</h4>
     <label class="field">
       <span>Nombre</span>
       <input type="text" id="modalInput" maxlength="40">
