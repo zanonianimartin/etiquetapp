@@ -324,34 +324,6 @@
         (<b>Shift</b> = de a 10). Vale para todos los campos numericos.</p>
     </section>
 
-    <section class="group">
-      <h3>Carga por lista <span class="badge">opcional</span></h3>
-      <p class="hint">Solo si necesitas productos distintos en la misma tirada.
-        Una linea por producto:<br>
-        <code>producto | cantidad | unidad | lote | vencimiento | codigo | cant. etiquetas</code>
-      </p>
-      <textarea id="bulk" rows="6" spellcheck="false"
-placeholder="Yerba mate | 500 | gr | L-001 | 12/2027 | 7791234567898 | 8
-Miel pura | 1 | kg | L-002 | 06/2028 | 7790000000010 | 4"></textarea>
-      <div class="row2">
-        <button id="btnBulk" class="btn">Generar etiquetas</button>
-        <button id="btnBulkDemo" class="btn ghost small">Ejemplo</button>
-      </div>
-    </section>
-
-    <section class="group">
-      <h3>Numeracion de lotes <span class="badge">opcional</span></h3>
-      <p class="hint">Reemplaza el lote de cada etiqueta con un numero correlativo.</p>
-      <div class="row2">
-        <label class="field"><span>Prefijo</span><input type="text" id="seqPrefix" value="L-" maxlength="16"></label>
-        <label class="field"><span>Desde</span><input type="number" id="seqFrom" value="1" min="0" step="1"></label>
-      </div>
-      <div class="row2">
-        <label class="field"><span>Digitos</span><input type="number" id="seqPad" value="3" min="1" max="10" step="1"></label>
-        <button id="btnSeq" class="btn ghost small">Numerar</button>
-      </div>
-    </section>
-
   </aside>
 </main>
 

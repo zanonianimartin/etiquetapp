@@ -1048,59 +1048,6 @@ function syncQty() {
 }
 
 /* ============================================================
-   Acciones
-   ============================================================ */
-
-function bulkGenerate() {
-  const raw = $('bulk').value.trim();
-  if (!raw) return toast('Escribi al menos una linea.', true);
-
-  const items = [];
-  const errores = [];
-  raw.split(/\r?\n/).forEach((line, i) => {
-    if (!line.trim()) return;
-    const f = line.split('|').map((s) => s.trim());
-    const count = Math.max(1, Math.min(MAX_QTY, parseInt(f[6], 10) || 1));
-    const label = {
-      producto: f[0] || '', cantidad: f[1] || '', unidad: f[2] || 'gr',
-      lote: f[3] || '', venc: f[4] || '', codigo: f[5] || ''
-    };
-    const faltan = labelProblems(label);
-    if (faltan.length) errores.push(`Linea ${i + 1}: falta ${faltan.join(', ')}`);
-    for (let k = 0; k < count && items.length < MAX_QTY; k++) items.push(cloneLabel(label));
-  });
-
-  if (!items.length) return toast('No se pudo leer ninguna linea.', true);
-
-  state.items = items;
-  state.qty = items.length;
-  state.sel = 0;
-  state.applyAll = false;              // cada producto conserva sus datos
-  $('applyAll').checked = false;
-  syncQty();
-  renderSheets();
-  fillForm();
-
-  if (errores.length) toast(errores[0] + (errores.length > 1 ? ` (+${errores.length - 1})` : ''), true);
-  else toast(`${items.length} etiquetas en ${pageCount()} hoja(s)`);
-}
-
-function sequenceLots() {
-  const prefix = $('seqPrefix').value;
-  const pad = clampNum($('seqPad').value, 1, 10, 3);
-  let n = clampNum($('seqFrom').value, 0, 1e9, 1);
-  for (let i = 0; i < state.qty; i++) {
-    state.items[i].lote = prefix + String(n).padStart(pad, '0');
-    n++;
-  }
-  state.applyAll = false;             // si no, el proximo cambio borraria la numeracion
-  $('applyAll').checked = false;
-  renderSheets();
-  fillForm();
-  toast(`${state.qty} lotes numerados`);
-}
-
-/* ============================================================
    Eventos
    ============================================================ */
 
@@ -1257,8 +1204,6 @@ function bindEvents() {
   enableWheelStep('rows', 1, 1, 20);
   [['mTop', 60], ['mBottom', 60], ['mLeft', 60], ['mRight', 60],
    ['gapX', 30], ['gapY', 30]].forEach(([id, hi]) => enableWheelStep(id, 0.5, 0, hi));
-  enableWheelStep('seqFrom', 1, 0, 999999);
-  enableWheelStep('seqPad', 1, 1, 10);
 
   /* --- tabla nutricional --- */
   $('btnNutri').addEventListener('click', openNutri);
@@ -1313,16 +1258,6 @@ function bindEvents() {
     if (e.key === 'Enter') closeModal($('modalInput').value);
     if (e.key === 'Escape') closeModal(null);
   });
-
-  /* --- listas --- */
-  $('btnBulk').addEventListener('click', bulkGenerate);
-  $('btnBulkDemo').addEventListener('click', () => {
-    $('bulk').value =
-      'Yerba mate compuesta | 500 | gr | L-001 | 12/2027 | 7791234567898 | 8\n' +
-      'Miel pura de abeja | 1 | kg | L-002 | 06/2028 | 7790000000010 | 4\n' +
-      'Nuez pelada mariposa | 250 | gr | L-003 | 03/2027 | 7798765432107 | 4';
-  });
-  $('btnSeq').addEventListener('click', sequenceLots);
 
   /* --- zoom --- */
   const setZoom = (z) => {

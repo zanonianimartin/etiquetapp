@@ -305,17 +305,6 @@ lo que la imagen necesita, sin márgenes muertos, y nunca se sale de la etiqueta
 Valida largo y dígito verificador, y cuando está mal indica cuál debería ser. Si se cargan
 12 dígitos en un EAN-13, el dígito verificador se calcula solo.
 
-**Carga por lista** (opcional, solo si hacen falta productos distintos en la misma tirada).
-Una línea por producto con el formato
-
-```
-producto | cantidad | unidad | lote | vencimiento | código | cantidad de etiquetas
-```
-
-y la app reparte las etiquetas en las hojas que hagan falta. Si una línea queda incompleta,
-lo avisa y no deja imprimir. También hay numeración correlativa de lotes (prefijo + contador
-con relleno de ceros), útil para tiradas donde cada etiqueta lleva un lote distinto.
-
 **Salida.** *Imprimir* abre el diálogo de impresión del navegador. *Exportar PDF* abre el
 mismo diálogo: hay que elegir **Guardar como PDF** como destino. En ambos casos conviene
 dejar los márgenes en *Ninguno* y la escala en 100 % si el navegador los ofrece. *Guardar*
