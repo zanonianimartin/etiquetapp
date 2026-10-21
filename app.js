@@ -43,12 +43,11 @@ const SHEET_TEMPLATES = [
   }
 ];
 
+/* Solo se ofrece "Dos columnas". El render de los otros disenos (a-e) sigue
+   en paintLabel y styles.css, pero ya no se puede elegir: una configuracion,
+   plantilla o proyecto que traiga otro diseno se abre con este. */
+const DESIGN = 'f';
 const DESIGNS = [
-  { id: 'a', name: 'Clasica' },
-  { id: 'b', name: 'Compacta' },
-  { id: 'c', name: 'Destacada' },
-  { id: 'd', name: 'Logo grande' },
-  { id: 'e', name: 'Marca de agua' },
   { id: 'f', name: 'Dos columnas' }
 ];
 
@@ -123,25 +122,33 @@ const cloneNutri = (n) => ({
 });
 const cloneLabel = (l) => ({ ...emptyLabel(), ...l, nutri: cloneNutri(l && l.nutri) });
 
+/* Configuracion por defecto de todas las etiquetas: hoja Rotola A4 3/8 de
+   16 etiquetas (2 por casillero, 49.5 x 67.7 mm), diseno Dos columnas. */
+const DEFAULT_CFG = {
+  cols: 4, rows: 4,                       // = SHEET_TEMPLATES 'rotola-a43-8-x2'
+  mTop: 13.1, mBottom: 13.1, mLeft: 6, mRight: 6,
+  gapX: 0, gapY: 0,
+  template: DESIGN,
+  fontScale: 130,
+  logoScale: 80,
+  logoX: 50,              // 0 = izquierda, 100 = derecha
+  logoY: 57,              // 0 = arriba, 100 = abajo
+  wmOpacity: 14,          // intensidad del logo de fondo
+  showLogo: true,
+  showBorder: true,
+  showGuides: false,
+  barcodeType: 'CODE128',
+  barcodeText: true,
+  barcodeH: 80
+};
+
+/* Sube cuando cambian los valores por defecto: una configuracion guardada en
+   el navegador con otra version se descarta una vez, asi todos arrancan con
+   la nueva aunque ya hubieran usado la app. */
+const CFG_VERSION = 2;
+
 let state = {
-  cfg: {
-    cols: 2, rows: 4,
-    mTop: 8, mBottom: 8, mLeft: 8, mRight: 8,
-    gapX: 3, gapY: 3,
-    template: 'a',
-    fontScale: 100,
-    logoScale: 100,
-    logoX: 50,              // 0 = izquierda, 100 = derecha
-    logoY: 0,               // 0 = arriba, 100 = abajo
-    wmOpacity: 14,          // intensidad de la marca de agua (diseno "e")
-    showLogo: true,
-    showBorder: true,
-    showGuides: false,
-    barcodeType: 'CODE128',
-    barcodeText: true,
-    barcodeH: 100,
-    tplWithDesign: true     // aplicar tambien el diseno al usar una plantilla
-  },
+  cfg: { ...DEFAULT_CFG },
   logo: DEFAULT_LOGO,
   logoAspect: 3,      // ancho/alto real del archivo; se mide al cargarlo
   items: [],          // datos cargados (nunca se recortan: bajar la cantidad no borra)
@@ -906,21 +913,11 @@ function applyTemplate(id) {
   if ('ingredientes' in t) patch.ingredientes = t.ingredientes || '';
   if ('infoExtra' in t) patch.infoExtra = t.infoExtra || '';
   applyPatch(patch);
-
-  /* El diseno guardado solo se aplica si el usuario lo pidio. Sin esto, una
-     plantilla vieja arrastra su diseno y pisa el que se acaba de elegir. */
-  const cambiaDiseno = state.cfg.tplWithDesign !== false
-                    && t.design && t.design !== state.cfg.template;
-  const nombreDiseno = cambiaDiseno
-    ? (DESIGNS.find((d) => d.id === t.design) || {}).name : null;
-  if (cambiaDiseno) { state.cfg.template = t.design; buildDesignPicker(); }
+  // El diseno que guarde la plantilla se ignora: hay uno solo (DESIGN).
 
   renderSheets();
   fillForm();
-  persist();
-  toast(`Plantilla "${t.name}" aplicada` +
-        (nombreDiseno ? ` · diseno: ${nombreDiseno}` : '') +
-        ' · falta cargar lote y vencimiento');
+  toast(`Plantilla "${t.name}" aplicada · falta cargar lote y vencimiento`);
 }
 
 /* Mide la proporcion real del archivo para que la caja del logo calce
@@ -1065,7 +1062,7 @@ let persistTimer = null;
 function persist() {
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
-    window.api.saveConfig({ cfg: state.cfg, logo: state.logo, zoom: state.zoom });
+    window.api.saveConfig({ cfgVersion: CFG_VERSION, cfg: state.cfg, logo: state.logo, zoom: state.zoom });
   }, 400);
 }
 
@@ -1336,11 +1333,6 @@ function bindEvents() {
     saveTemplate(clean);
   });
 
-  $('tplWithDesign').addEventListener('change', () => {
-    state.cfg.tplWithDesign = $('tplWithDesign').checked;
-    persist();
-  });
-
   $('btnTplApply').addEventListener('click', () => applyTemplate($('tplSaved').value));
   $('tplSaved').addEventListener('dblclick', () => applyTemplate($('tplSaved').value));
 
@@ -1450,7 +1442,7 @@ function bindEvents() {
   $('btnOpen').addEventListener('click', async () => {
     const data = await window.api.openProject();
     if (!data) return;
-    state.cfg = { ...state.cfg, ...(data.cfg || {}) };
+    state.cfg = { ...state.cfg, ...(data.cfg || {}), template: DESIGN };
     // Igual que en init: una ruta al logo de fabrica (de esta version o de la
     // de escritorio) se reemplaza por el de fabrica actual.
     state.logo = data.logo && String(data.logo).startsWith('data:') ? data.logo : DEFAULT_LOGO;
@@ -1668,7 +1660,6 @@ function syncControls() {
   $('barcodeText').checked = c.barcodeText;
   $('barcodeH').value = c.barcodeH;
   $('barcodeHVal').textContent = c.barcodeH + '%';
-  $('tplWithDesign').checked = c.tplWithDesign !== false;
   syncLogoPos();
   $('wmOpacity').value = c.wmOpacity;
   $('wmOpacityVal').textContent = c.wmOpacity + '%';
@@ -1699,17 +1690,13 @@ async function init() {
 
   const saved = await window.api.loadConfig();
   if (saved) {
-    state.cfg = { ...state.cfg, ...(saved.cfg || {}) };
+    // Una configuracion de otra version de los valores por defecto se descarta.
+    if (saved.cfgVersion === CFG_VERSION) state.cfg = { ...state.cfg, ...(saved.cfg || {}) };
+    state.cfg.template = DESIGN;
     /* Solo se recupera un logo subido a mano (data URL). Si lo guardado es
        la ruta del logo de fabrica, se ignora: asi, al cambiar el de fabrica,
        nadie se queda con el anterior o con una ruta que ya no existe. */
     if (saved.logo && String(saved.logo).startsWith('data:')) state.logo = saved.logo;
-    // Configuraciones anteriores guardaban una posicion fija: se traduce a X/Y.
-    const viejo = { arriba: [50, 0], abajo: [50, 100], izquierda: [0, 50], derecha: [100, 50] };
-    if (saved.cfg && saved.cfg.logoPos && viejo[saved.cfg.logoPos]) {
-      [state.cfg.logoX, state.cfg.logoY] = viejo[saved.cfg.logoPos];
-      delete state.cfg.logoPos;
-    }
     if (saved.zoom) state.zoom = saved.zoom;
   }
 

@@ -158,6 +158,20 @@ deja mandarla a la papelera: queda en la carpeta, desvinculada del lote.
 
 ## Qué hace
 
+**Configuración por defecto.** Todas las etiquetas arrancan con:
+
+| Ajuste | Valor |
+|---|---|
+| Hoja | Rotola A4 3/8 — 16 etiquetas (2 por casillero, 49.5 × 67.7 mm): 4 × 4, márgenes 13.1 / 13.1 / 6 / 6 mm, sin separación |
+| Diseño | Dos columnas |
+| Escala de texto | 130 % |
+| Logo | Xilo, centrado horizontal, vertical 57 %, tamaño 80 %, intensidad de la marca de agua 14 % |
+| Código de barras | CODE128, con el número debajo, altura 80 % |
+| Bordes | con borde de corte, sin marcas en las esquinas |
+
+Lo que se cambie queda guardado en el navegador. Cuando cambian estos valores por defecto
+en una versión nueva de la app, cada navegador vuelve a ellos una vez.
+
 **Formatos de hoja.** Preajustes de 1x1 hasta 5x8 (2x4 = 8 etiquetas, 4x4 = 16, 3x7 = 21,
 4x10 = 40, etc.) o columnas y filas a mano. Los márgenes de la hoja y la separación entre
 etiquetas se ajustan en milímetros; el panel muestra el tamaño real de cada etiqueta.
@@ -173,9 +187,9 @@ Hay además dos campos **opcionales**, que no bloquean la impresión y no se imp
 quedan vacíos:
 
 - **Ingredientes.** Texto libre (hasta 400 caracteres, respeta los saltos de línea). Se
-  imprime en la columna derecha del diseño *Dos columnas*; los otros diseños lo ignoran.
+  imprime en la columna derecha de la etiqueta.
 - **Información adicional.** Una línea (hasta 120 caracteres) que se imprime **justo encima
-  del código de barras**, en los seis diseños. Pensado para leyendas del tipo
+  del código de barras**. Pensado para leyendas del tipo
   "Industria Uruguaya" o "Conservar en lugar fresco y seco".
 
 Los dos describen al producto y no a la tirada, así que se guardan junto con las
@@ -195,8 +209,8 @@ mueven la selección).
 título, porción de referencia y una fila por nutriente con nombre, valor, unidad y %VD. Al
 activarla se precarga el rótulo estándar (valor energético, carbohidratos, proteínas, grasas
 totales, saturadas y trans, fibra y sodio) con los valores en blanco para completar; también
-se pueden agregar o quitar filas a mano. La tabla se imprime **dentro** de la etiqueta y
-funciona en los seis diseños (en *Dos columnas* ocupa la mitad izquierda). Si el %VD queda
+se pueden agregar o quitar filas a mano. La tabla se imprime **dentro** de la etiqueta, en
+la mitad izquierda. Si el %VD queda
 vacío en todas las filas, esa columna no se
 imprime. Mientras la tabla esté activada no se puede imprimir con filas a medio cargar.
 
@@ -214,17 +228,12 @@ energético y/o los nutrientes que correspondan a cada producto. Si la tabla est
 desactivada no se imprime ninguna de las dos.
 
 **Plantillas guardadas.** *Guardar datos actuales como plantilla* archiva producto, cantidad,
-unidad, código, ingredientes, información adicional, tabla nutricional y diseño con un
+unidad, código, ingredientes, información adicional y tabla nutricional con un
 nombre. **No guarda el lote ni el
 vencimiento**, porque cambian en cada tirada. Al aplicar una plantilla se completan los datos
 del producto y hay que cargar esos dos campos. Las plantillas se guardan en la planilla de
 Google, así que las ve todo el equipo; para usarlas hay que estar conectado. Guardar con un
 nombre que ya existe (sin distinguir mayúsculas) actualiza esa plantilla.
-
-Como la plantilla también guarda el diseño, aplicarla cambia el diseño elegido. La casilla
-***Aplicar también el diseño guardado*** controla eso: destildada, la plantilla completa
-únicamente los datos y respeta el diseño que esté seleccionado. Cuando el cambio ocurre, el
-aviso lo dice ("… · diseno: Marca de agua"). La preferencia queda guardada entre sesiones.
 
 Las plantillas guardadas antes de que existieran los campos *ingredientes* e *información
 adicional* no los traen. Al aplicarlas **se respeta lo que ya tenga la etiqueta** en vez de
@@ -277,31 +286,22 @@ la tabla nutricional en grillas chicas— la barra sobre la vista previa avisa c
 se van a imprimir recortadas y esas etiquetas se marcan en ámbar. No bloquea la impresión: se
 resuelve bajando la escala de texto, usando menos filas y columnas o achicando la tabla.
 
-**Seis diseños de etiqueta.**
+**Diseño de etiqueta: Dos columnas.** Es el único diseño. El logo va de fondo, atenuado, y
+los datos encima: producto, cantidad, lote y vencimiento arriba; en el medio el cuerpo
+partido en dos mitades, con la tabla nutricional a la izquierda y los ingredientes a la
+derecha; abajo la información adicional y el código de barras. Las dos mitades son
+**50 % y 50 %** y se estiran al mismo alto, así el bloque queda parejo aunque la lista de
+ingredientes sea corta. Si falta uno de los dos —no hay tabla, o no hay ingredientes— el que
+quede **ocupa el ancho completo** en lugar de dejar media etiqueta vacía. Conviene vigilar el
+aviso de contenido recortado cuando la tabla nutricional es larga.
 
-| Diseño | Disposición | Peso del logo |
-|---|---|---|
-| Clásica | logo arriba centrado, producto, cantidad grande, lote y vencimiento, código abajo | 7 % |
-| Compacta | logo y producto en una franja superior, datos a la izquierda y código a la derecha | 4 % |
-| Destacada | logo arriba a la izquierda, cantidad en recuadro negro, código a lo ancho del pie | 5 % |
-| Logo grande | logo en una banda a todo el ancho arriba, datos y código debajo | 21 % |
-| Marca de agua | logo de fondo atenuado ocupando toda la etiqueta, datos encima | 76 % |
-| Dos columnas | igual que *Marca de agua*, pero el cuerpo se parte en dos mitades: tabla nutricional a la izquierda, ingredientes a la derecha | 76 % |
+Las plantillas, configuraciones o proyectos que traigan otro diseño (de versiones
+anteriores, que tenían seis) se abren con este. El código de los otros cinco diseños sigue en
+`app.js` y `styles.css`, pero ya no se puede elegir.
 
-El porcentaje es la superficie de la etiqueta que ocupa el logo en una grilla 2x4, medido
-sobre el logo por defecto.
-
-*Dos columnas* hereda de *Marca de agua* el fondo, la intensidad y el manejo de la posición
-del logo. Las dos mitades son **50 % y 50 %** y se estiran al mismo alto, así el bloque queda
-parejo aunque la lista de ingredientes sea corta. Si falta uno de los dos —no hay tabla, o no
-hay ingredientes— el que quede **ocupa el ancho completo** en lugar de dejar media etiqueta
-vacía. Es el diseño que más contenido mete, así que conviene usarlo en etiquetas grandes
-(2x4 o menos) y vigilar el aviso de contenido recortado.
-
-En *Marca de agua* y *Dos columnas* aparece un control extra de **intensidad** (4 % a 40 %, por defecto 14 %)
-para graduar cuánto se nota el fondo según el logo que se use. La marca se dibuja como imagen
-y no como fondo CSS, así que sale impresa siempre, sin depender de la opción "imprimir
-fondos" del driver de la impresora.
+La **intensidad** del logo de fondo (4 % a 40 %, por defecto 14 %) gradúa cuánto se nota
+según el logo que se use. El fondo se dibuja como imagen y no como fondo CSS, así que sale
+impreso siempre, sin depender de la opción "imprimir fondos" del driver de la impresora.
 
 **Logo.** Por defecto usa el logo de Xilo (`assets/logo-xilo.png`) y se reemplaza por cualquier
 PNG, JPG, SVG, GIF, WEBP o BMP de hasta 3 MB. El logo elegido, igual que el formato de hoja,
@@ -309,9 +309,8 @@ el diseño y el zoom, queda guardado **en este navegador** (cada computadora rec
 Se puede ocultar o escalar del 40 % al 180 %.
 
 **Posición del logo.** Dos sliders, horizontal y vertical, lo mueven libremente por la
-etiqueta (0 a 100 en cada eje, de a 1). El contenido reserva el alto del logo por arriba o por
-abajo según dónde esté, así no queda texto tapado. Funciona en los seis diseños; en
-*Marca de agua* y *Dos columnas* mueve el fondo, que sí se superpone a los datos a propósito.
+etiqueta (0 a 100 en cada eje, de a 1). Mueven el logo de fondo, que se superpone a los
+datos a propósito.
 
 La caja del logo se calcula con la proporción real del archivo, así que ocupa exactamente
 lo que la imagen necesita, sin márgenes muertos, y nunca se sale de la etiqueta.
