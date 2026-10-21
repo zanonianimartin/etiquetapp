@@ -295,7 +295,7 @@ para graduar cuánto se nota el fondo según el logo que se use. La marca se dib
 y no como fondo CSS, así que sale impresa siempre, sin depender de la opción "imprimir
 fondos" del driver de la impresora.
 
-**Logo.** Trae uno por defecto (`assets/logo-default.svg`) y se reemplaza por cualquier
+**Logo.** Por defecto usa el logo de Xilo (`assets/logo-xilo.png`) y se reemplaza por cualquier
 PNG, JPG, SVG, GIF, WEBP o BMP de hasta 3 MB. El logo elegido, igual que el formato de hoja,
 el diseño y el zoom, queda guardado **en este navegador** (cada computadora recuerda el suyo).
 Se puede ocultar o escalar del 40 % al 180 %.
@@ -339,7 +339,7 @@ google.js                    login de Google y acceso a las APIs de Sheets y Dri
 cloud.js                     catálogo, plantillas y lotes contra la planilla
 browser-api.js               archivos, impresión y configuración local del navegador
 apps-script/usuarios.gs      script de la planilla: permisos según la pestaña Usuarios
-assets/logo-default.svg      logo por defecto
+assets/logo-xilo.png         logo por defecto (Xilo)
 vendor/JsBarcode.all.min.js
 ```
 

@@ -2,7 +2,7 @@
    EtiquetApp — logica de la aplicacion
    ============================================================ */
 
-const DEFAULT_LOGO = 'assets/logo-default.svg';
+const DEFAULT_LOGO = 'assets/logo-xilo.png';
 const MM_PX = 96 / 25.4;           // 1 mm en px @96dpi
 const A4 = { w: 210, h: 297 };
 const MAX_QTY = 2000;
@@ -1444,7 +1444,9 @@ function bindEvents() {
     const data = await window.api.openProject();
     if (!data) return;
     state.cfg = { ...state.cfg, ...(data.cfg || {}) };
-    state.logo = data.logo || DEFAULT_LOGO;
+    // Igual que en init: una ruta al logo de fabrica (de esta version o de la
+    // de escritorio) se reemplaza por el de fabrica actual.
+    state.logo = data.logo && String(data.logo).startsWith('data:') ? data.logo : DEFAULT_LOGO;
     const items = Array.isArray(data.items) ? data.items : [];
     state.items = items.length ? items.map(cloneLabel) : [emptyLabel()];
     state.qty = Math.min(state.items.length, Math.max(1, data.qty || state.items.length));
@@ -1691,7 +1693,10 @@ async function init() {
   const saved = await window.api.loadConfig();
   if (saved) {
     state.cfg = { ...state.cfg, ...(saved.cfg || {}) };
-    if (saved.logo) state.logo = saved.logo;
+    /* Solo se recupera un logo subido a mano (data URL). Si lo guardado es
+       la ruta del logo de fabrica, se ignora: asi, al cambiar el de fabrica,
+       nadie se queda con el anterior o con una ruta que ya no existe. */
+    if (saved.logo && String(saved.logo).startsWith('data:')) state.logo = saved.logo;
     // Configuraciones anteriores guardaban una posicion fija: se traduce a X/Y.
     const viejo = { arriba: [50, 0], abajo: [50, 100], izquierda: [0, 50], derecha: [100, 50] };
     if (saved.cfg && saved.cfg.logoPos && viejo[saved.cfg.logoPos]) {
