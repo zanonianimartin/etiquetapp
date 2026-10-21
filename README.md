@@ -150,6 +150,7 @@ la app la agrega sola al conectarse.
 | `Catalogo` | producto | codigo, clave, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
 | `Lotes` | lote | lote, codigo, producto, vencimiento, paquetes, bolsas, imagen, archivo, enlace, actualizado, por |
 | `Bolsas` | bolsa de granel | id, ingreso, producto, proveedor, loteProveedor, peso, vencimiento, precio, estado, foto, archivo, enlace, actualizado, por |
+| `Proveedores` | proveedor | nombre, telefono, email, notas, actualizado, por |
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
@@ -298,6 +299,16 @@ catálogo, sin presentación: una bolsa de *Pimienta blanca molida* sirve para l
 **vencimiento**, **precio de compra**, y opcionalmente **proveedor**, **lote del proveedor** y
 una **foto de su etiqueta** (va a la carpeta de imágenes de Drive, con la misma subida y
 pantalla de espera que las fotos de lotes). Recibe un ID correlativo: `B-0001`, `B-0002`…
+
+Si llegan varias bolsas iguales, **Cantidad de bolsas** (1 a 50) las registra juntas: los datos
+se cargan una vez y se crean tantas bolsas como se indique, con IDs seguidos (`B-0005` a
+`B-0008`), cada una seguible por separado. Comparten la foto, que se sube una sola vez y no va a
+la papelera de Drive mientras alguna de ellas la use.
+
+Los **proveedores** se guardan en la pestaña `Proveedores` (nombre, teléfono, mail y notas) y se
+eligen de una lista; *Nuevo…* y *Editar…* abren su ventana. El nombre queda fijo una vez creado
+(es lo que guardan las bolsas) y un proveedor que usan bolsas no se puede eliminar. Los nombres
+escritos a mano en bolsas anteriores también aparecen en la lista.
 
 La lista muestra cada bolsa con su foto, datos, estado y los lotes en los que se usó; se
 filtra por estado (por defecto, las sin agotar) y se busca por producto, proveedor, lote del
