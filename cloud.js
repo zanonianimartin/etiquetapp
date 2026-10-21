@@ -361,8 +361,10 @@ function refreshCatalogUI() {
   dl.innerHTML = '';
   cloud.catalog.forEach((c) => {
     const o = document.createElement('option');
+    // El navegador muestra el codigo (value) y al lado el label. La clave no
+    // se muestra, pero se puede seguir buscando por ella (ver findCatalog).
     o.value = c.codigo;
-    o.label = [c.clave, c.producto].filter(Boolean).join(' · ');
+    o.label = [c.producto, [c.cantidad, c.unidad].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
     dl.appendChild(o);
   });
   $('catCount').textContent = cloudReady() ? `${cloud.catalog.length} productos` : '—';
