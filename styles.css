@@ -17,6 +17,8 @@
 }
 
 *{box-sizing:border-box}
+/* "hidden" siempre oculta, aunque la clase del elemento le ponga display. */
+[hidden]{display:none !important}
 
 html,body{height:100%}
 body{
@@ -88,7 +90,7 @@ body{
 .field{display:block; margin-bottom:9px}
 .field>span{display:block; font-size:11px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.4px}
 .field>span b{color:var(--txt); font-weight:600; text-transform:none; letter-spacing:0}
-.field input[type=text], .field input[type=number], .field select, textarea{
+.field input[type=text], .field input[type=number], .field input[type=date], .field select, textarea{
   width:100%; background:#14161a; color:var(--txt);
   border:1px solid var(--line); border-radius:6px;
   padding:7px 9px; font-size:12.5px; font-family:inherit;
@@ -96,6 +98,8 @@ body{
 .field input:focus, .field select:focus, textarea:focus{
   outline:none; border-color:var(--accent);
 }
+/* El selector de fecha del navegador, en el tema oscuro de la app. */
+.field input[type=date]{color-scheme:dark; min-height:34px}
 /* campos que se completan solos (el codigo de barras sale del catalogo) */
 .field input[readonly]{background:#101215; color:var(--muted); cursor:not-allowed}
 .field input[readonly]:focus{border-color:var(--line)}
@@ -661,6 +665,69 @@ details.adv summary:hover{color:var(--txt)}
 .hint.link{border-left:2px solid var(--accent); padding-left:8px}
 .hint.link.ok{border-color:var(--ok); color:#7fd6ab}
 .hint.link.bad{border-color:var(--danger); color:#ff9c95}
+
+/* ---------------- Menu de secciones ---------------- */
+
+.secciones{
+  display:flex; gap:3px; padding:3px;
+  background:var(--panel2); border:1px solid var(--line); border-radius:var(--radius);
+}
+.secciones button{
+  border:0; background:transparent; color:var(--muted); cursor:pointer;
+  padding:6px 14px; border-radius:6px; font:inherit; font-size:12.5px;
+}
+.secciones button:hover{color:var(--txt)}
+.secciones button.on{background:var(--accent); color:#fff; font-weight:600}
+
+/* ---------------- Seccion Bolsas ---------------- */
+
+.bolsas-view{display:none; flex:1 1 auto; min-height:0; grid-template-columns:380px minmax(0, 1fr)}
+.bolsas-view > .panel{min-height:0; overflow-y:auto}
+.bolsas-form{border-right:1px solid var(--line)}
+.bolsas-form .btn.primary.wide{margin-top:4px}
+.bolsas-lista > .group{max-width:900px}
+
+/* Solo se ve una seccion por vez. En pantalla nada mas: la impresion siempre
+   usa las hojas de etiquetas. */
+@media screen{
+  body[data-seccion="bolsas"] .layout,
+  body[data-seccion="bolsas"] .mtabs,
+  body[data-seccion="bolsas"] .solo-etiquetas,
+  body[data-seccion="bolsas"] #printStatus{display:none !important}   /* refreshPrintState le reescribe las clases */
+  body[data-seccion="bolsas"] .bolsas-view{display:grid}
+}
+
+.bolsa-list{display:grid; gap:8px}
+.bolsa-card{
+  display:grid; grid-template-columns:72px minmax(0, 1fr); gap:10px;
+  padding:8px; border:1px solid var(--line); border-radius:8px; background:#14161a;
+  cursor:pointer;
+}
+.bolsa-card:hover, .bolsa-card:focus{border-color:#5a6274; outline:none}
+.bolsa-card.sel{border-color:var(--accent); background:#1c2431}
+.bolsa-thumb{
+  width:72px; height:72px; border-radius:6px; overflow:hidden; background:#0e1013;
+  display:grid; place-items:center;
+}
+.bolsa-thumb img{width:100%; height:100%; object-fit:cover; display:block}
+.bolsa-thumb.vacia span{font-size:10px; color:#6b7280}
+.bolsa-thumb.loading::after{content:'…'; color:var(--muted)}
+.bolsa-cab{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.bolsa-cab b{font-family:Consolas, monospace; font-size:12px}
+.bolsa-prod{font-weight:600; font-size:13px; margin:2px 0}
+.bolsa-det{font-size:11.5px; color:var(--muted)}
+.bolsa-lotes{font-size:11px; color:#9dc0ff; margin-top:3px}
+.bolsa-estado{font-size:10.5px; padding:2px 8px; border-radius:20px; text-transform:capitalize}
+.bolsa-estado.e-disponible{background:#16241e; color:#7fd6ab}
+.bolsa-estado.e-en-uso{background:#1c2431; color:#9dc0ff}
+.bolsa-estado.e-agotada{background:#2a1a19; color:#ff9c95}
+
+/* Bolsas para tildar en el registro de lotes. */
+.bolsa-pick{max-height:180px; overflow-y:auto; border:1px solid var(--line); border-radius:6px; padding:2px 8px; background:#14161a}
+.bolsa-pick:empty{display:none}
+.bolsa-pick .hint{margin:6px 0}
+.bolsa-opc{font-size:11.5px; margin:6px 0; align-items:flex-start}
+.bolsa-opc input{margin-top:2px}
 .modal a{color:var(--accent)}
 
 /* Sin conexion, las secciones de la planilla se ven pero no se usan. */
@@ -740,6 +807,9 @@ body.cloud-on .gate{display:none}
   .topbar-actions{flex:1 1 auto; flex-wrap:wrap; justify-content:flex-end; gap:6px}
   .topbar-actions .sep{display:none}
   #printStatus{flex:1 1 100%; max-width:none; text-align:center; order:-1}
+  /* El menu de secciones va en su propio renglon, al final, con dos botones grandes. */
+  .secciones{order:3; flex:1 1 100%}
+  .secciones button{flex:1 1 0; padding:8px 10px}
 
   .mtabs{
     display:flex; flex:0 0 auto;
@@ -763,6 +833,13 @@ body.cloud-on .gate{display:none}
 
   .scroll{padding:12px}
   .sheets{gap:12px}
+
+  /* Bolsas: formulario arriba y lista abajo, en una sola columna que scrollea. */
+  .bolsas-view{grid-template-columns:minmax(0, 1fr); grid-auto-rows:max-content; align-content:start; overflow-y:auto}
+  /* min-height:auto: con 0 la grilla achicaba el formulario para que entraran los dos. */
+  .bolsas-view > .panel{overflow:visible; min-height:auto}
+  .bolsas-form{border-right:0; border-bottom:1px solid var(--line)}
+  .bolsas-view > .panel > .group{max-width:560px; margin-left:auto; margin-right:auto}
 }
 
 @media screen and (max-width: 600px){

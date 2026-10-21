@@ -13,7 +13,8 @@ const FOLDER_NAME = 'EtiquetApp - imagenes de lotes';
 
 const cloud = {
   catalog: [],        // { codigo, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri }
-  lotes: [],          // { lote, codigo, producto, vencimiento, imagen, archivo, enlace, actualizado, por }
+  lotes: [],          // { lote, codigo, producto, vencimiento, paquetes, bolsas, imagen, archivo, enlace, actualizado, por }
+  bolsas: [],         // bolsas de granel: ver bolsas.js
   usuarios: [],       // filas activas de la pestana Usuarios
   ajustes: {},        // pestana Ajustes: clave -> valor
   loaded: 0,          // momento de la ultima carga completa
@@ -79,7 +80,7 @@ const catToRow = (c) => ({ ...c, nutri: JSON.stringify(cloneNutri(c.nutri)) });
 
 const loteFromRow = (r) => ({
   lote: String(r.lote).trim(), codigo: r.codigo || '', producto: r.producto || '',
-  vencimiento: r.vencimiento || '', paquetes: r.paquetes || '',
+  vencimiento: r.vencimiento || '', paquetes: r.paquetes || '', bolsas: r.bolsas || '',
   imagen: r.imagen || '', archivo: r.archivo || '',
   enlace: r.enlace || '', actualizado: r.actualizado || '', por: r.por || ''
 });
@@ -125,17 +126,20 @@ function handleDenied(err) {
 
 async function cloudLoadAll() {
   await gEnsureToken();               // una sola renovacion para todas las lecturas
-  const [usu, cat, lot, aju] = await Promise.all([
-    gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Lotes'), gReadTab('Ajustes')
+  const [usu, cat, lot, aju, bol] = await Promise.all([
+    gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Lotes'), gReadTab('Ajustes'),
+    gReadTab('Bolsas')
   ]);
   cloud.rol = await checkAccess(usu.rows);
   cloud.usuarios = usu.rows.filter((r) => String(r.email || '').trim() && esActivo(r.activo));
   cloud.ajustes = Object.fromEntries(aju.rows.map((r) => [String(r.clave).trim(), String(r.valor || '').trim()]));
   cloud.catalog = cat.rows.filter((r) => String(r.codigo || '').trim()).map(catFromRow);
   cloud.lotes = lot.rows.filter((r) => String(r.lote || '').trim()).map(loteFromRow);
+  cloud.bolsas = bol.rows.filter((r) => String(r.id || '').trim()).map(bolsaFromRow);   // bolsas.js
   cloud.loaded = Date.now();
 
   refreshCatalogUI();
+  refreshBolsasUI();
   refreshLoteUI();
 }
 
@@ -172,6 +176,7 @@ function cloudClear() {
   cloud.lotes = [];
   cloud.usuarios = [];
   cloud.ajustes = {};
+  cloud.bolsas = [];
   cloud.rol = '';
   clearTimeout(syncTimer);
   syncPending = null;
@@ -717,6 +722,7 @@ async function paintLote() {
   const reg = lote ? findLote(lote) : null;
   if (lote !== loteQtyDe) {
     loteQtyDe = lote;
+    loteBolsasDesde(reg);                 // bolsas.js: las bolsas que ya tenia el lote
     $('loteQty').value = reg && reg.paquetes ? reg.paquetes : '';
     $('loteQty').closest('.field').classList.remove('missing');
     // Un lote ya registrado trae sus paquetes: se imprimen esas etiquetas.
@@ -733,8 +739,10 @@ async function paintLote() {
     info.textContent = `Lote ${lote}: registrado` +
       (cuando ? ` el ${cuando}` : '') + (reg.por ? ` por ${reg.por}` : '') +
       (reg.paquetes ? ` · ${reg.paquetes} paquetes` : ' · sin cantidad de paquetes') +
+      (reg.bolsas ? ` · bolsas ${reg.bolsas}` : '') +
       (reg.imagen ? ' · con imagen' : ' · sin imagen');
   }
+  renderLoteBolsas();
 
   $('btnLoteSave').textContent = reg ? 'Actualizar registro' : 'Registrar lote';
   $('btnLoteSave').disabled = !lote;
@@ -772,7 +780,8 @@ async function writeLote(extra = {}) {
   const paquetes = lotePaquetes();
   const row = {
     lote: currentLote(), codigo: l.codigo || '', producto: l.producto || '',
-    vencimiento: l.venc || '', ...(paquetes !== null ? { paquetes: String(paquetes) } : {}), ...extra
+    vencimiento: l.venc || '', ...(paquetes !== null ? { paquetes: String(paquetes) } : {}),
+    bolsas: loteBolsasTexto(), ...extra   // bolsas.js
   };
   await gUpsert('Lotes', 'lote', row);
   const prev = findLote(row.lote);
@@ -786,9 +795,14 @@ async function registerLote() {
   if (!currentLote()) return toast('Cargá el lote de la etiqueta.', true);
   if (!pedirPaquetes()) return;
   const nuevo = !findLote(currentLote());
-  const ok = await cloudTask('Registrando lote…', async () => { await writeLote(); return true; });
+  const ok = await cloudTask('Registrando lote…', async () => {
+    await writeLote();
+    await marcarBolsasEnUso();            // bolsas.js: las disponibles pasan a "en uso"
+    return true;
+  });
   if (!ok) return;
   refreshLoteUI();
+  refreshBolsasUI();
   toast(nuevo ? `Lote ${currentLote()} registrado` : `Lote ${currentLote()} actualizado`);
 }
 
@@ -1109,6 +1123,7 @@ function bindCloudEvents() {
 
 async function cloudInit() {
   bindCloudEvents();
+  bindBolsasEvents();                   // bolsas.js
   syncCloudUI('');
   refreshCatalogUI();
   refreshLoteUI();

@@ -148,7 +148,8 @@ la app la agrega sola al conectarse.
 | Pestaña | Una fila por | Columnas |
 |---|---|---|
 | `Catalogo` | producto | codigo, clave, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
-| `Lotes` | lote | lote, codigo, producto, vencimiento, paquetes, imagen, archivo, enlace, actualizado, por |
+| `Lotes` | lote | lote, codigo, producto, vencimiento, paquetes, bolsas, imagen, archivo, enlace, actualizado, por |
+| `Bolsas` | bolsa de granel | id, ingreso, producto, proveedor, loteProveedor, peso, vencimiento, precio, estado, foto, archivo, enlace, actualizado, por |
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
@@ -157,6 +158,11 @@ la app la agrega sola al conectarse.
 - En `Lotes`, `imagen` es el ID del archivo en Drive, `archivo` el nombre original de la foto
   y `enlace` el link para abrirla desde la planilla.
 - En `Ajustes`, `carpetaImagenes` es el ID de la carpeta de Drive de las imágenes.
+- En `Lotes`, `bolsas` son los IDs de las bolsas de granel usadas, separados por coma
+  (`B-0001, B-0003`).
+- En `Bolsas`, `ingreso` y `vencimiento` van como `AAAA-MM-DD`; `peso` en kg y `precio` (de
+  compra, total de la bolsa) con punto decimal; `estado` es `disponible`, `en uso` o
+  `agotada`; `foto` es el ID en Drive de la foto de la etiqueta de la bolsa.
 
 Las fotos se suben a Drive tal cual (hasta 20 MB), sin recomprimirlas, con el nombre
 `Lote <lote> - <archivo original>`. Al cambiar o quitar la imagen de un lote, la anterior va a
@@ -285,6 +291,26 @@ en Google Drive. **La imagen no se imprime**: se ve en el panel y, con un clic, 
 Cambiar la imagen reemplaza la anterior. El campo *Lote*
 sugiere los lotes ya registrados.
 
+**Bolsas de granel** (sección *Bolsas* del menú de arriba). Trazabilidad de lo que se compra
+a granel y se fracciona. Cada bolsa que llega se registra con **producto** (de los nombres del
+catálogo, sin presentación: una bolsa de *Pimienta blanca molida* sirve para los paquetes de
+250 g y de 500 g), **fecha de ingreso** (hoy, por defecto), **peso** (25 kg por defecto),
+**vencimiento**, **precio de compra**, y opcionalmente **proveedor**, **lote del proveedor** y
+una **foto de su etiqueta** (va a la carpeta de imágenes de Drive, con la misma subida y
+pantalla de espera que las fotos de lotes). Recibe un ID correlativo: `B-0001`, `B-0002`…
+
+La lista muestra cada bolsa con su foto, datos, estado y los lotes en los que se usó; se
+filtra por estado (por defecto, las sin agotar) y se busca por producto, proveedor, lote del
+proveedor, ID o lote de etiquetas. Tocar una bolsa la abre para editarla. El **estado**
+(*disponible*, *en uso*, *agotada*) se cambia a mano; la única excepción es que una bolsa
+*disponible* pasa sola a *en uso* cuando se registra un lote que la usa. Una bolsa asociada a
+un lote no se puede eliminar: se marca como agotada.
+
+En **Registro de lotes**, *Bolsas usadas* lista las bolsas sin agotar del mismo producto que
+la etiqueta (o de todos, con *Mostrar bolsas de otros productos*) para tildar una o varias.
+Se guardan con *Registrar lote* / *Actualizar registro*. Así, desde un lote se sabe de qué
+bolsas salió, y desde una bolsa, en qué lotes se usó.
+
 **Datos compartidos.** Con varias personas trabajando a la vez, cada guardado relee la
 planilla antes de escribir, para no pisar filas que otro haya agregado o borrado. Las listas
 se refrescan solas al volver a la pestaña (si pasó más de un minuto) o con *Actualizar
@@ -341,6 +367,7 @@ app.js                       estado, render de etiquetas, códigos de barras
 config.js                    ID de cliente de Google y planilla por defecto
 google.js                    login de Google y acceso a las APIs de Sheets y Drive
 cloud.js                     catálogo y lotes contra la planilla
+bolsas.js                    sección Bolsas (granel) y bolsas usadas en cada lote
 browser-api.js               archivos, impresión y configuración local del navegador
 apps-script/usuarios.gs      script de la planilla: permisos según la pestaña Usuarios
 assets/logo-xilo.png         logo por defecto (Xilo)

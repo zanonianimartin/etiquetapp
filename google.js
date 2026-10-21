@@ -27,10 +27,18 @@ const TABS = {
   Catalogo:   ['codigo', 'clave', 'tipo', 'producto', 'cantidad', 'unidad', 'ingredientes',
                'infoExtra', 'nutri', 'actualizado', 'por'],
   /* `paquetes`: cuantos paquetes salieron del lote (obligatorio al
-     registrarlo). `imagen` es el id del archivo en Drive y `enlace` su link
-     para abrirlo desde la planilla. */
-  Lotes:      ['lote', 'codigo', 'producto', 'vencimiento', 'paquetes', 'imagen', 'archivo', 'enlace',
+     registrarlo). `bolsas`: ids de las bolsas de granel que se usaron,
+     separados por coma ("B-0001, B-0003"). `imagen` es el id del archivo en
+     Drive y `enlace` su link para abrirlo desde la planilla. */
+  Lotes:      ['lote', 'codigo', 'producto', 'vencimiento', 'paquetes', 'bolsas', 'imagen', 'archivo', 'enlace',
                'actualizado', 'por'],
+  /* Bolsas de granel (25 kg) que llegan y se fraccionan. `id` B-0001,
+     correlativo. `ingreso` y `vencimiento` en formato AAAA-MM-DD. `peso` en
+     kg y `precio` (de compra, total de la bolsa) como numeros con punto
+     decimal. `estado`: disponible, en uso o agotada. `foto` es el id en Drive
+     de la foto de la etiqueta de la bolsa. */
+  Bolsas:     ['id', 'ingreso', 'producto', 'proveedor', 'loteProveedor', 'peso', 'vencimiento',
+               'precio', 'estado', 'foto', 'archivo', 'enlace', 'actualizado', 'por'],
   /* Cuentas habilitadas para usar la app. `rol`: admin o usuario.
      `activo`: vacio o SI habilita; NO deshabilita sin borrar la fila.
      El script de apps-script/usuarios.gs sincroniza esta lista con los
@@ -45,7 +53,8 @@ const TABS = {
    planilla pierde los ceros de adelante ("0495…" pasa a ser un numero). */
 const TEXT_COLS = {
   Catalogo: ['codigo', 'clave'],      // una clave como "00123" tambien perderia los ceros
-  Lotes: ['lote', 'codigo', 'vencimiento']
+  Lotes: ['lote', 'codigo', 'vencimiento'],
+  Bolsas: ['id', 'ingreso', 'loteProveedor', 'vencimiento']
 };
 
 const G = {

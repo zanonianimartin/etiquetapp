@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261021-1851">
+<html lang="es" data-version="20261021-1922">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261021-1851">
+<link rel="stylesheet" href="styles.css?v=20261021-1922">
 </head>
 <body data-tab="datos">
 
@@ -36,12 +36,17 @@
       <small>Etiquetas en hojas A4</small>
     </div>
   </div>
+  <!-- Menu de secciones (bolsas.js: setSeccion) -->
+  <nav class="secciones" id="secciones" aria-label="Secciones">
+    <button data-seccion="etiquetas" class="on" aria-pressed="true">Etiquetas</button>
+    <button data-seccion="bolsas" aria-pressed="false">Bolsas</button>
+  </nav>
   <div class="topbar-actions">
-    <span id="printStatus" class="status"></span>
+    <span id="printStatus" class="status solo-etiquetas"></span>
     <button id="btnGoogle" class="btn ghost google">Conectar con Google</button>
-    <span class="sep"></span>
-    <button id="btnPdf" class="btn">Exportar PDF</button>
-    <button id="btnPrint" class="btn primary">Imprimir</button>
+    <span class="sep solo-etiquetas"></span>
+    <button id="btnPdf" class="btn solo-etiquetas">Exportar PDF</button>
+    <button id="btnPrint" class="btn primary solo-etiquetas">Imprimir</button>
   </div>
 </header>
 
@@ -299,6 +304,13 @@
         </label>
         <p class="hint">Es la cantidad de etiquetas que se imprimen: una por paquete. Sin
           este dato no se puede imprimir.</p>
+        <div class="field">
+          <span>Bolsas usadas <span class="badge">opcional</span></span>
+          <div id="loteBolsas" class="bolsa-pick"></div>
+          <label class="check"><input type="checkbox" id="loteBolsasTodas"> Mostrar bolsas de otros productos</label>
+          <p class="hint" id="loteBolsasAviso" hidden>Las bolsas elegidas se guardan al tocar
+            <b>Registrar lote</b> / <b>Actualizar registro</b>.</p>
+        </div>
         <div class="row2">
           <button id="btnLoteSave" class="btn small">Registrar lote</button>
           <button id="btnLoteImg" class="btn ghost small">Adjuntar imagen…</button>
@@ -312,6 +324,97 @@
 
   </aside>
 </main>
+
+<!-- ============ SECCION BOLSAS (bolsas.js) ============ -->
+<div class="bolsas-view no-print" id="bolsasView">
+  <aside class="panel bolsas-form" id="bForm">
+    <section class="group">
+      <h3 id="bTitulo">Registrar bolsa</h3>
+      <p class="hint">Cada bolsa de granel que llega. Despues se asocia a los lotes de
+        etiquetas que salen de ella, en <b>Registro de lotes</b>.</p>
+
+      <label class="field req">
+        <span>Producto</span>
+        <select id="bProducto"></select>
+      </label>
+      <div class="row2">
+        <label class="field req">
+          <span>Fecha de ingreso</span>
+          <input type="date" id="bIngreso">
+        </label>
+        <label class="field req">
+          <span>Peso (kg)</span>
+          <input type="number" id="bPeso" min="0.01" step="0.01" inputmode="decimal" value="25">
+        </label>
+      </div>
+      <div class="row2">
+        <label class="field req">
+          <span>Vencimiento</span>
+          <input type="date" id="bVenc">
+        </label>
+        <label class="field req">
+          <span>Precio de compra ($)</span>
+          <input type="number" id="bPrecio" min="0" step="0.01" inputmode="decimal" placeholder="1250">
+        </label>
+      </div>
+      <label class="field">
+        <span>Proveedor <span class="badge">opcional</span></span>
+        <input type="text" id="bProveedor" maxlength="80" placeholder="Nombre del proveedor">
+      </label>
+      <label class="field">
+        <span>Lote del proveedor <span class="badge">opcional</span></span>
+        <input type="text" id="bLoteProv" maxlength="40" placeholder="El que trae la etiqueta de la bolsa">
+      </label>
+      <label class="field" id="bEstadoField" hidden>
+        <span>Estado</span>
+        <select id="bEstado">
+          <option value="disponible">Disponible</option>
+          <option value="en uso">En uso</option>
+          <option value="agotada">Agotada</option>
+        </select>
+      </label>
+
+      <div class="field">
+        <span>Foto de la etiqueta <span class="badge">opcional</span></span>
+        <div class="lote-img" id="bFotoBox" hidden>
+          <img id="bFotoImg" alt="Foto de la etiqueta de la bolsa" title="Abrir en tamano real">
+        </div>
+        <p class="hint" id="bFotoInfo"></p>
+        <button id="bFotoBtn" class="btn ghost small wide">Foto de la etiqueta…</button>
+      </div>
+
+      <em class="err" id="bErr"></em>
+      <button id="bGuardar" class="btn primary wide">Registrar bolsa</button>
+      <div class="row2">
+        <button id="bCancelar" class="btn ghost small" hidden>Cancelar</button>
+        <button id="bEliminar" class="btn ghost small danger" hidden>Eliminar</button>
+      </div>
+    </section>
+  </aside>
+
+  <section class="panel bolsas-lista">
+    <section class="group">
+      <h3>Bolsas <span id="bCount" class="badge">—</span></h3>
+      <div class="row2">
+        <label class="field">
+          <span>Buscar</span>
+          <input type="text" id="bBuscar" placeholder="Producto, proveedor, lote…" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>Mostrar</span>
+          <select id="bFiltro">
+            <option value="activas">Sin agotar</option>
+            <option value="disponible">Disponibles</option>
+            <option value="en uso">En uso</option>
+            <option value="agotada">Agotadas</option>
+            <option value="todas">Todas</option>
+          </select>
+        </label>
+      </div>
+      <div id="bList" class="bolsa-list"></div>
+    </section>
+  </section>
+</div>
 
 <!-- Modal de la planilla de Google. Va antes que el de texto: al crear una
      planilla se pide el nombre encima de este. -->
@@ -490,11 +593,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261021-1851"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261021-1851"></script>
-<script src="google.js?v=20261021-1851"></script>
-<script src="browser-api.js?v=20261021-1851"></script>
-<script src="cloud.js?v=20261021-1851"></script>
-<script src="app.js?v=20261021-1851"></script>
+<script src="config.js?v=20261021-1922"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261021-1922"></script>
+<script src="google.js?v=20261021-1922"></script>
+<script src="browser-api.js?v=20261021-1922"></script>
+<script src="cloud.js?v=20261021-1922"></script>
+<script src="bolsas.js?v=20261021-1922"></script>
+<script src="app.js?v=20261021-1922"></script>
 </body>
 </html>
