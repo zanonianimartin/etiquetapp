@@ -87,7 +87,9 @@ function gRequestToken(prompt) {
   return new Promise((resolve, reject) => {
     const oauth = window.google && google.accounts && google.accounts.oauth2;
     if (!oauth) {
-      reject(new Error('No se pudo cargar el login de Google. Revisá la conexion a internet.'));
+      /* Lo habitual no es la conexion sino un bloqueador de anuncios o
+         rastreadores (Opera, Brave, uBlock…) que frena el script de Google. */
+      reject(new Error('No se pudo cargar el login de Google. Si usás un bloqueador de anuncios o rastreadores (Opera y Brave traen uno), desactivalo para este sitio y recargá la pagina. Si no, revisá la conexion a internet.'));
       return;
     }
     const client = oauth.initTokenClient({
