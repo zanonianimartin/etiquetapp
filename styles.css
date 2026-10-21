@@ -103,7 +103,6 @@ body{
 .field.req > span::after{content:' *'; color:var(--danger); font-weight:700}
 .field.missing input, .field.missing select{border-color:#7a3a35; background:#221618}
 
-.qty-quick{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:2px 0 8px}
 input[type=range]{width:100%; accent-color:var(--accent)}
 textarea{width:100%; resize:vertical; line-height:1.5; font-family:Consolas, monospace; font-size:11.5px}
 

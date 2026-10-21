@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261021-0006">
+<html lang="es" data-version="20261021-0016">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261021-0006">
+<link rel="stylesheet" href="styles.css?v=20261021-0016">
 </head>
 <body data-tab="datos">
 
@@ -300,7 +300,8 @@
           <span>Cantidad de paquetes</span>
           <input type="number" id="loteQty" min="1" step="1" inputmode="numeric" placeholder="120">
         </label>
-        <p class="hint">Es la cantidad de etiquetas que se imprimen: una por paquete.</p>
+        <p class="hint">Es la cantidad de etiquetas que se imprimen: una por paquete. Sin
+          este dato no se puede imprimir.</p>
         <div class="row2">
           <button id="btnLoteSave" class="btn small">Registrar lote</button>
           <button id="btnLoteImg" class="btn ghost small">Adjuntar imagen…</button>
@@ -310,26 +311,6 @@
           vencimiento y <b>cantidad de paquetes</b> (obligatoria), y una imagen de registro
           que va a la carpeta del equipo en Google Drive. <b>La imagen no se imprime.</b></p>
       </div>
-    </section>
-
-    <section class="group">
-      <h3>Cantidad de etiquetas</h3>
-      <label class="field req">
-        <span>Etiquetas a imprimir</span>
-        <input type="number" id="qty" min="1" max="2000" step="1" value="8"
-               title="Rueda del mouse para ajustar (Shift = de a 10)">
-      </label>
-      <div class="qty-quick">
-        <button class="btn ghost small" data-qty="hoja">1 hoja</button>
-        <button class="btn ghost small" data-qty="50">50</button>
-        <button class="btn ghost small" data-qty="64">64</button>
-        <button class="btn ghost small" data-qty="100">100</button>
-      </div>
-      <p class="hint" id="qtyHint">—</p>
-      <p class="hint">Se imprime una etiqueta por paquete: cargar la <b>cantidad de paquetes</b>
-        en el registro de lotes ajusta este numero, y cambiarlo aca la actualiza.</p>
-      <p class="hint tip">Con el campo seleccionado, la rueda del mouse ajusta el valor
-        (<b>Shift</b> = de a 10). Vale para todos los campos numericos.</p>
     </section>
 
   </aside>
@@ -512,11 +493,11 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261021-0006"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261021-0006"></script>
-<script src="google.js?v=20261021-0006"></script>
-<script src="browser-api.js?v=20261021-0006"></script>
-<script src="cloud.js?v=20261021-0006"></script>
-<script src="app.js?v=20261021-0006"></script>
+<script src="config.js?v=20261021-0016"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261021-0016"></script>
+<script src="google.js?v=20261021-0016"></script>
+<script src="browser-api.js?v=20261021-0016"></script>
+<script src="cloud.js?v=20261021-0016"></script>
+<script src="app.js?v=20261021-0016"></script>
 </body>
 </html>

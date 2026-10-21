@@ -688,25 +688,15 @@ function pedirPaquetes() {
 }
 
 /* La cantidad de paquetes del lote es la cantidad de etiquetas que se
-   imprimen: un paquete, una etiqueta. Cargarla (o elegir un lote ya
-   registrado) ajusta "Etiquetas a imprimir"; cambiar ese campo actualiza los
-   paquetes (ver syncPaquetesDesdeQty), asi los dos nunca quedan distintos. */
+   imprimen: un paquete, una etiqueta. No hay otro lugar donde fijarla:
+   cargarla (o elegir un lote ya registrado) arma esa cantidad de etiquetas,
+   y sin ella no se puede imprimir (validateRun en app.js). */
 function paquetesAEtiquetas(n) {
   const qty = Math.min(n, MAX_QTY);
   if (n > MAX_QTY) toast(`El lote tiene ${n} paquetes: se imprimen ${MAX_QTY} etiquetas, el maximo por tirada.`, true);
-  if (state.qty === qty) return;
+  if (state.qty === qty) return refreshPrintState();
   setQty(qty);
-  syncQty();
   renderSheets();
-}
-
-/* Llamada desde app.js cuando cambia "Etiquetas a imprimir". Solo si los
-   paquetes ya estan cargados: en un lote nuevo siguen vacios hasta que se
-   escriban, porque son obligatorios. */
-function syncPaquetesDesdeQty() {
-  const actual = lotePaquetesValor();
-  if (actual === null || actual === state.qty || actual > MAX_QTY) return;
-  $('loteQty').value = state.qty;
 }
 
 /* Lo mismo que lotePaquetes, sin marcar el campo: para leerlo al vuelo. */
@@ -732,6 +722,7 @@ async function paintLote() {
     // Un lote ya registrado trae sus paquetes: se imprimen esas etiquetas.
     const n = lotePaquetesValor();
     if (n !== null) paquetesAEtiquetas(n);
+    else refreshPrintState();            // lote sin paquetes: no se puede imprimir
   }
   $('loteQty').disabled = !lote;
   const info = $('loteInfo');
@@ -1084,6 +1075,7 @@ function bindCloudEvents() {
     if ($('loteQty').closest('.field').classList.contains('missing')) lotePaquetes();
     const n = lotePaquetesValor();
     if (n !== null) paquetesAEtiquetas(n);
+    else refreshPrintState();            // se borro el numero: deja de poder imprimirse
   });
   $('loteQty').addEventListener('keydown', (e) => { if (e.key === 'Enter') registerLote(); });
   $('btnLoteImg').addEventListener('click', attachLoteImage);

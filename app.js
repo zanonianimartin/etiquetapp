@@ -372,6 +372,11 @@ function validateRun() {
   });
 
   if (!malas.length && !pendientes.length) {
+    /* La cantidad de etiquetas sale de la cantidad de paquetes del lote
+       (cloud.js): sin ese dato no se imprime. */
+    if (lotePaquetesValor() === null) {
+      return { ok: false, msg: 'Falta la cantidad de paquetes del lote (Registro de lotes)', bad: [], todo: [] };
+    }
     return { ok: true, msg: `Listo para imprimir · ${run.length} etiquetas`, bad: [], todo: [] };
   }
   // Se informa primero lo que esta a medio cargar; despues lo que falta cargar.
@@ -721,9 +726,6 @@ function renderSheets() {
     (huecos ? ` · ${huecos} en blanco` : '');
   $('labelSizeHint').textContent =
     `Etiqueta: ${m.lw.toFixed(1)} × ${m.lh.toFixed(1)} mm · ${n} por hoja`;
-  $('qtyHint').textContent =
-    `${pages} hoja${pages > 1 ? 's' : ''} A4 · ${n} por hoja` +
-    (huecos ? ` · quedan ${huecos} espacios en blanco` : ' · hojas completas');
 
   checkFit();
 }
@@ -777,16 +779,10 @@ function buildGuides(m) {
   return g;
 }
 
-/* Click en una etiqueta: la selecciona; si es un hueco, extiende la tirada. */
+/* Click en una etiqueta: la selecciona. Los huecos no hacen nada: la
+   cantidad de etiquetas la da la cantidad de paquetes del lote. */
 function onLabelClick(flat) {
-  if (flat >= state.qty) {
-    setQty(flat + 1);
-    state.sel = flat;
-    syncQty();
-    renderSheets();
-    fillForm();
-    return;
-  }
+  if (flat >= state.qty) return;
   state.sel = flat;
   document.querySelectorAll('.label.sel').forEach((n) => n.classList.remove('sel'));
   const node = document.querySelectorAll('.sheet-grid > *')[flat];
@@ -1043,9 +1039,6 @@ function closeModal(value) {
   if (modalResolve) { modalResolve(value); modalResolve = null; }
 }
 
-function syncQty() {
-  $('qty').value = state.qty;
-}
 
 /* ============================================================
    Eventos
@@ -1178,29 +1171,7 @@ function bindEvents() {
     toast('Etiquetas vaciadas');
   });
 
-  /* --- cantidad de etiquetas --- */
-  let qtyTimer = null;
-  const onQty = () => {
-    const raw = $('qty').value.trim();
-    if (!raw) return;                      // el usuario esta borrando para reescribir
-    setQty(clampNum(raw, 1, MAX_QTY, state.qty));
-    syncPaquetesDesdeQty();                // un paquete por etiqueta (cloud.js)
-    clearTimeout(qtyTimer);
-    qtyTimer = setTimeout(() => { renderSheets(); fillForm(); }, 200);
-  };
-  $('qty').addEventListener('input', onQty);
-  $('qty').addEventListener('change', () => { onQty(); syncQty(); });
-  document.querySelectorAll('[data-qty]').forEach((b) => {
-    b.addEventListener('click', () => {
-      const v = b.dataset.qty === 'hoja' ? perPage() : parseInt(b.dataset.qty, 10);
-      setQty(v); syncQty(); syncPaquetesDesdeQty(); renderSheets(); fillForm();
-      $('qty').focus();          // deja el campo listo para seguir ajustando
-      $('qty').select();
-    });
-  });
-
   /* La rueda del mouse ajusta los campos numericos (con el campo enfocado). */
-  enableWheelStep('qty', 1, 1, MAX_QTY);
   enableWheelStep('cols', 1, 1, 12);
   enableWheelStep('rows', 1, 1, 20);
   [['mTop', 60], ['mBottom', 60], ['mLeft', 60], ['mRight', 60],
@@ -1313,7 +1284,7 @@ function bindEvents() {
     state.sel = 0;
     bcCache.clear();
     medirLogo(state.logo, renderSheets);
-    buildDesignPicker(); syncControls(); syncQty();
+    buildDesignPicker(); syncControls();
     renderSheets(); fillForm(); persist();
     toast('Proyecto abierto');
   });
@@ -1559,6 +1530,7 @@ async function init() {
     if (saved.zoom) state.zoom = saved.zoom;
   }
 
+  // Hasta que se cargue la cantidad de paquetes del lote se muestra una hoja.
   state.qty = perPage();
   state.items = Array.from({ length: state.qty }, emptyLabel);
   state.sel = 0;
@@ -1566,7 +1538,6 @@ async function init() {
   medirLogo(state.logo, renderSheets);
   buildDesignPicker();
   syncControls();
-  syncQty();
   bindEvents();
   renderSheets();
   fillForm();

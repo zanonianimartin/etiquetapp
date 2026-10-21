@@ -202,11 +202,11 @@ quedan vacíos:
 Los dos describen al producto y no a la tirada, así que se guardan en el **catálogo de
 productos** (a diferencia del lote y el vencimiento).
 
-**Cantidad de etiquetas.** Se escribe cuántas se quieren imprimir (1 a 2000) y la app arma
-las hojas que hagan falta, replicando los datos automáticamente en cada etiqueta. Hay accesos
-rápidos para 1 hoja, 50, 64 y 100. Bajar la cantidad no borra nada: los datos quedan
-guardados y vuelven si se sube de nuevo. Los espacios que sobran en la última hoja se
-imprimen en blanco.
+**Cantidad de etiquetas.** Se imprime **una etiqueta por paquete**: la cantidad sale siempre
+de la *cantidad de paquetes* del registro de lotes (ver más abajo), y no hay otro lugar donde
+fijarla. La app arma las hojas que hagan falta, replicando los datos en cada etiqueta, y los
+espacios que sobran en la última hoja se imprimen en blanco. Mientras no se cargue la
+cantidad de paquetes, la vista previa muestra una hoja y no se puede imprimir.
 
 Si hace falta editar una etiqueta suelta, se destilda *Aplicar los cambios a todas las
 etiquetas* y se hace clic sobre la que se quiera cambiar (las flechas del teclado también
@@ -275,9 +275,9 @@ no se guarda nada hasta completarlos.
 seleccionada con su código, producto, vencimiento y **cantidad de paquetes** —obligatoria:
 sin un número entero mayor que 0 no se puede registrar el lote ni adjuntarle imagen; al
 elegir un lote ya registrado se muestra la cantidad guardada— y opcionalmente con una imagen de
-registro. **Se imprime una etiqueta por paquete**: cargar la cantidad de paquetes ajusta
-*Etiquetas a imprimir*, y cambiar ese número actualiza los paquetes (en un lote nuevo los
-paquetes quedan vacíos hasta escribirlos, porque son obligatorios). Si un lote tiene más de
+registro. **Se imprime una etiqueta por paquete**: cargar la cantidad de paquetes, o elegir
+un lote ya registrado, arma esa cantidad de etiquetas, y sin ella no se puede imprimir (en un
+lote nuevo los paquetes quedan vacíos hasta escribirlos). Si un lote tiene más de
 2000 paquetes se guarda la cantidad real, pero se imprimen 2000, el máximo por tirada. Un
 cambio en los paquetes queda en la planilla al tocar *Registrar lote* / *Actualizar registro*.
 La imagen de registro (por ejemplo, una foto de la tirada) se guarda en la carpeta del equipo
