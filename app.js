@@ -290,6 +290,28 @@ function textoADecimal(texto) {
   return { ok: true, codigo: String(n).padStart(13, '0'), msg: '' };
 }
 
+/* La cuenta al reves: del codigo de barras a la clave. Sirve para productos
+   del catalogo que no tienen la clave guardada (cargados antes de que
+   existiera la columna). Devuelve '' si el codigo no sale de ninguna clave. */
+function decimalATexto(codigo) {
+  const s = String(codigo || '').trim();
+  if (!/^\d{1,13}$/.test(s)) return '';
+  let n = Number(s);
+  let txt = '';
+  while (n > 0) {
+    txt = String.fromCharCode(n % 256) + txt;
+    n = Math.floor(n / 256);
+  }
+  return txt.length && txt.length <= CLAVE_LEN && /^[\x20-\x7E]+$/.test(txt) && textoADecimal(txt).codigo === s.padStart(13, '0')
+    ? txt : '';
+}
+
+/* Nombre del lote: L-fecha-clave, con la fecha como DDMMAA (L-211026-sal1k). */
+function generarLote(clave, fecha = new Date()) {
+  const dos = (n) => String(n).padStart(2, '0');
+  return `L-${dos(fecha.getDate())}${dos(fecha.getMonth() + 1)}${dos(fecha.getFullYear() % 100)}-${clave}`;
+}
+
 /* Cache: en una tirada casi todas las etiquetas comparten el mismo codigo. */
 const bcCache = new Map();
 
@@ -800,6 +822,9 @@ function fillForm() {
   $('fCantidad').value = l.cantidad;
   $('fUnidad').value = l.unidad || 'gr';
   $('fLote').value = l.lote;
+  /* El lote lo genera la app (L-fecha-clave) para los productos con clave.
+     Si el codigo no sale de ninguna clave no se puede generar: ahi se escribe a mano. */
+  $('fLote').readOnly = !!decimalATexto(l.codigo);
   $('fVenc').value = l.venc;
   $('fCodigo').value = l.codigo;
   $('fIngredientes').value = l.ingredientes || '';

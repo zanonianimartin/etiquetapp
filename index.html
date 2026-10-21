@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261021-1939">
+<html lang="es" data-version="20261021-2005">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261021-1939">
+<link rel="stylesheet" href="styles.css?v=20261021-2005">
 </head>
 <body data-tab="datos">
 
@@ -205,6 +205,15 @@
                  aria-expanded="false" aria-controls="catResults" aria-autocomplete="list">
           <div class="cat-results" id="catResults" role="listbox" hidden></div>
         </div>
+        <!-- Bolsas de granel de las que sale el lote (bolsas.js). Al tildarlas,
+             la etiqueta toma su vencimiento. -->
+        <div class="field">
+          <span>Bolsas usadas <span class="badge">opcional</span></span>
+          <div id="loteBolsas" class="bolsa-pick"></div>
+          <label class="check"><input type="checkbox" id="loteBolsasTodas"> Mostrar bolsas de otros productos</label>
+          <p class="hint" id="loteBolsasAviso" hidden>Las bolsas elegidas se guardan al tocar
+            <b>Registrar lote</b> / <b>Actualizar registro</b> (en Registro de lotes).</p>
+        </div>
         <p class="hint link" id="catLink"></p>
         <div class="row2">
           <button id="btnCatApply" class="btn small">Aplicar</button>
@@ -213,7 +222,9 @@
         <button id="btnCatSave" class="btn ghost small wide">Guardar etiqueta actual en el catalogo</button>
         <p class="hint">Cada producto tiene una <b>clave de 5 caracteres</b>; su codigo de barras
           sale de ella (igual que <code>=TEXTO_A_DECIMAL()</code> en la planilla). Elegir un
-          producto de la lista completa <b>todo menos el lote y el vencimiento</b>.</p>
+          producto de la lista completa la etiqueta y genera el <b>lote</b>
+          (<b>L-fecha-clave</b>, por ejemplo L-211026-sal1k). El <b>vencimiento</b> sale de la
+          bolsa usada.</p>
       </div>
     </section>
 
@@ -246,13 +257,15 @@
 
       <label class="field req">
         <span>Lote</span>
-        <input type="text" id="fLote" list="loteList" placeholder="L-2026-001" maxlength="32">
+        <!-- Lo genera la app al elegir el producto (applyCatalog); solo se
+             escribe a mano si el producto no tiene clave. -->
+        <input type="text" id="fLote" list="loteList" placeholder="Se genera al elegir el producto" maxlength="32">
       </label>
       <datalist id="loteList"></datalist>
 
       <label class="field req">
         <span>Vencimiento</span>
-        <input type="text" id="fVenc" placeholder="12/2027" maxlength="24">
+        <input type="text" id="fVenc" placeholder="Se toma de la bolsa usada" maxlength="24">
       </label>
 
       <label class="field">
@@ -304,13 +317,6 @@
         </label>
         <p class="hint">Es la cantidad de etiquetas que se imprimen: una por paquete. Sin
           este dato no se puede imprimir.</p>
-        <div class="field">
-          <span>Bolsas usadas <span class="badge">opcional</span></span>
-          <div id="loteBolsas" class="bolsa-pick"></div>
-          <label class="check"><input type="checkbox" id="loteBolsasTodas"> Mostrar bolsas de otros productos</label>
-          <p class="hint" id="loteBolsasAviso" hidden>Las bolsas elegidas se guardan al tocar
-            <b>Registrar lote</b> / <b>Actualizar registro</b>.</p>
-        </div>
         <div class="row2">
           <button id="btnLoteSave" class="btn small">Registrar lote</button>
           <button id="btnLoteImg" class="btn ghost small">Adjuntar imagen…</button>
@@ -637,12 +643,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261021-1939"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261021-1939"></script>
-<script src="google.js?v=20261021-1939"></script>
-<script src="browser-api.js?v=20261021-1939"></script>
-<script src="cloud.js?v=20261021-1939"></script>
-<script src="bolsas.js?v=20261021-1939"></script>
-<script src="app.js?v=20261021-1939"></script>
+<script src="config.js?v=20261021-2005"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261021-2005"></script>
+<script src="google.js?v=20261021-2005"></script>
+<script src="browser-api.js?v=20261021-2005"></script>
+<script src="cloud.js?v=20261021-2005"></script>
+<script src="bolsas.js?v=20261021-2005"></script>
+<script src="app.js?v=20261021-2005"></script>
 </body>
 </html>

@@ -261,7 +261,12 @@ cargado en la etiqueta. *Guardar etiqueta actual en el catálogo* actualiza un p
 ya existe con lo que tenga la etiqueta (por ejemplo, una tabla nutricional nueva), sin
 tocar su clave.
 
-Elegir un producto desde el buscador completa todo **menos el lote y el vencimiento**. El
+Elegir un producto desde el buscador completa la etiqueta y **genera el lote**:
+`L-fecha-clave`, con la fecha del día como DDMMAA (`L-211026-sal1k`). El campo *Lote* queda
+de solo lectura, para que siempre respete la nomenclatura; el mismo producto el mismo día da
+el mismo lote. Si el producto no tiene la clave guardada se deduce del código de barras (es la
+misma cuenta al revés); si el código no sale de ninguna clave, el lote se escribe a mano. El
+**vencimiento** sale de la bolsa usada (ver *Bolsas de granel*). El
 buscador muestra una lista propia (no el desplegable del navegador, que en los celulares casi
 no funciona): se abre al tocar el campo y se filtra mientras se escribe, sin distinguir
 mayúsculas ni acentos ("pimenton" encuentra "Pimentón"), por nombre, presentación, código o
@@ -317,10 +322,11 @@ proveedor, ID o lote de etiquetas. Tocar una bolsa la abre para editarla. El **e
 *disponible* pasa sola a *en uso* cuando se registra un lote que la usa. Una bolsa asociada a
 un lote no se puede eliminar: se marca como agotada.
 
-En **Registro de lotes**, *Bolsas usadas* lista las bolsas sin agotar del mismo producto que
-la etiqueta (o de todos, con *Mostrar bolsas de otros productos*) para tildar una o varias.
-Se guardan con *Registrar lote* / *Actualizar registro*. Así, desde un lote se sabe de qué
-bolsas salió, y desde una bolsa, en qué lotes se usó.
+Debajo de *Buscar producto*, **Bolsas usadas** lista las bolsas sin agotar del mismo producto
+que la etiqueta (o de todos, con *Mostrar bolsas de otros productos*) para tildar una o varias.
+Al tildarlas, la etiqueta toma **el vencimiento de la bolsa** (con varias, el que vence
+primero). Se guardan con *Registrar lote* / *Actualizar registro*. Así, desde un lote se sabe de
+qué bolsas salió, y desde una bolsa, en qué lotes se usó.
 
 **Datos compartidos.** Con varias personas trabajando a la vez, cada guardado relee la
 planilla antes de escribir, para no pisar filas que otro haya agregado o borrado. Las listas

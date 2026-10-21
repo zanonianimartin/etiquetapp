@@ -483,11 +483,29 @@ function renderLoteBolsas() {
     cb.addEventListener('change', () => {
       if (cb.checked) loteBolsasSel.add(b.id); else loteBolsasSel.delete(b.id);
       $('loteBolsasAviso').hidden = false;
+      vencDesdeBolsas();
     });
     fila.appendChild(cb);
     fila.append(`${b.id} · ${b.producto} · vence ${fechaUY(b.vencimiento)} · ${b.estado}`);
     cont.appendChild(fila);
   });
+}
+
+/* El vencimiento de la etiqueta es el de la bolsa usada. Con varias, el mas
+   proximo: el producto no puede vencer despues que la primera de sus bolsas.
+   Sin bolsas tildadas no se toca (puede haberse cargado a mano). */
+function vencDesdeBolsas() {
+  const vencs = [...loteBolsasSel]
+    .map((id) => (cloud.bolsas.find((b) => b.id === id) || {}).vencimiento)
+    .filter((v) => /^\d{4}-\d{2}-\d{2}$/.test(v || ''))
+    .sort();
+  if (!vencs.length) return;
+  const venc = fechaUY(vencs[0]);
+  if (currentLabel().venc === venc) return;
+  applyPatch({ venc });
+  renderSheets();
+  fillForm();
+  toast(`Vencimiento ${venc}, el de la bolsa${vencs.length > 1 ? ' que vence primero' : ''}`);
 }
 
 /* Al registrar el lote, sus bolsas "disponibles" pasan a "en uso".

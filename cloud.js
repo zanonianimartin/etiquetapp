@@ -587,10 +587,15 @@ async function createProduct() {
 }
 
 /* Completa todo menos lote y vencimiento, que son de cada tirada. */
+/* Completa todo menos el vencimiento (sale de la bolsa usada o se carga a
+   mano). El lote se genera solo: L-fecha-clave (generarLote en app.js). Si
+   el producto no tiene la clave guardada, se saca del codigo de barras. */
 function applyCatalog(c) {
+  const clave = c.clave || decimalATexto(c.codigo);
   applyPatch({
     producto: c.producto, cantidad: c.cantidad, unidad: c.unidad, codigo: c.codigo,
-    ingredientes: c.ingredientes, infoExtra: c.infoExtra, nutri: cloneNutri(c.nutri)
+    ingredientes: c.ingredientes, infoExtra: c.infoExtra, nutri: cloneNutri(c.nutri),
+    ...(clave ? { lote: generarLote(clave) } : {})
   });
   if (c.tipo && BARCODE_RULES[c.tipo] && c.tipo !== state.cfg.barcodeType) {
     state.cfg.barcodeType = c.tipo;
@@ -600,7 +605,9 @@ function applyCatalog(c) {
   }
   renderSheets();
   fillForm();
-  toast(`"${c.producto}" cargado del catalogo · falta lote y vencimiento`);
+  toast(clave
+    ? `"${c.producto}" cargado · lote ${generarLote(clave)} · falta el vencimiento (elegí la bolsa usada)`
+    : `"${c.producto}" cargado del catalogo · este producto no tiene clave: no se pudo generar el lote`, !clave);
 }
 
 async function saveToCatalog() {
