@@ -666,6 +666,21 @@ details.adv summary:hover{color:var(--txt)}
 .hint.link.ok{border-color:var(--ok); color:#7fd6ab}
 .hint.link.bad{border-color:var(--danger); color:#ff9c95}
 
+/* ---------------- Paso a paso de la etiqueta ---------------- */
+
+/* Se van mostrando las partes a medida que se completan (syncPasos en
+   bolsas.js): producto -> bolsa usada -> datos, lote e impresion. */
+body:not(.paso-producto) .requiere-producto,
+body:not(.paso-bolsa) .requiere-bolsa{display:none !important}
+body.paso-producto .solo-sin-producto,
+body.paso-bolsa .solo-sin-bolsa{display:none}
+
+.imprimir-box .status{
+  display:block; max-width:none; white-space:normal; text-align:center;
+  margin-bottom:10px; padding:8px 12px;
+}
+.imprimir-box .btn{padding:10px 12px}
+
 /* ---------------- Menu de secciones ---------------- */
 
 .secciones{
@@ -695,9 +710,7 @@ details.adv summary:hover{color:var(--txt)}
    usa las hojas de etiquetas. */
 @media screen{
   body[data-seccion="bolsas"] .layout,
-  body[data-seccion="bolsas"] .mtabs,
-  body[data-seccion="bolsas"] .solo-etiquetas,
-  body[data-seccion="bolsas"] #printStatus{display:none !important}   /* refreshPrintState le reescribe las clases */
+  body[data-seccion="bolsas"] .mtabs{display:none !important}
   body[data-seccion="bolsas"] .bolsas-view{display:grid}
 }
 
@@ -810,7 +823,6 @@ body.cloud-on .gate{display:none}
   .brand small{display:none}
   .topbar-actions{flex:1 1 auto; flex-wrap:wrap; justify-content:flex-end; gap:6px}
   .topbar-actions .sep{display:none}
-  #printStatus{flex:1 1 100%; max-width:none; text-align:center; order:-1}
   /* El menu de secciones va en su propio renglon, al final, con dos botones grandes. */
   .secciones{order:3; flex:1 1 100%}
   .secciones button{flex:1 1 0; padding:8px 10px}

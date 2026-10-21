@@ -838,6 +838,7 @@ function fillForm() {
   syncNutriBadge();
   refreshLoteUI();
   paintCatLink();
+  syncPasos();                      // bolsas.js: que partes del formulario se muestran
 }
 
 function readForm() {

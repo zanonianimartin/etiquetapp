@@ -468,9 +468,21 @@ function renderLoteBolsas() {
     .filter((b) => loteBolsasSel.has(b.id) || (b.estado !== 'agotada' && (todas || normalizar(b.producto) === prod)))
     .sort((a, b) => a.ingreso.localeCompare(b.ingreso) || a.id.localeCompare(b.id));
   if (!lista.length) {
+    /* Sin bolsas no se puede seguir (el paso a paso pide una): se ofrece ir
+       a registrarla, con el producto ya elegido. */
     cont.appendChild(el('p', 'hint', cloud.bolsas.length
-      ? 'No hay bolsas disponibles de este producto. Registralas en la seccion Bolsas.'
-      : 'Todavia no hay bolsas registradas (seccion Bolsas).'));
+      ? 'No hay bolsas sin agotar de este producto.'
+      : 'Todavia no hay bolsas registradas.'));
+    const ir = el('button', 'btn small wide', 'Registrar la bolsa en la seccion Bolsas');
+    ir.type = 'button';
+    ir.addEventListener('click', () => {
+      const prod = currentLabel().producto;
+      setSeccion('bolsas');
+      resetBolsaForm();
+      fillBolsaProductos(prod);
+    });
+    cont.appendChild(ir);
+    syncPasos();
     return;
   }
   lista.forEach((b) => {
@@ -483,12 +495,47 @@ function renderLoteBolsas() {
     cb.addEventListener('change', () => {
       if (cb.checked) loteBolsasSel.add(b.id); else loteBolsasSel.delete(b.id);
       $('loteBolsasAviso').hidden = false;
+      // Tildada = en uso, en el momento. Destildada vuelve a disponible si
+      // ningun otro lote la usa (se habia tildado por error).
+      const otros = bolsaLotes(b.id).filter((x) => x !== lote);
+      if (cb.checked && b.estado === 'disponible') cambiarEstadoBolsa(b, 'en uso');
+      else if (!cb.checked && b.estado === 'en uso' && !otros.length) cambiarEstadoBolsa(b, 'disponible');
       vencDesdeBolsas();
+      syncPasos();
     });
     fila.appendChild(cb);
     fila.append(`${b.id} · ${b.producto} · vence ${fechaUY(b.vencimiento)} · ${b.estado}`);
     cont.appendChild(fila);
   });
+  syncPasos();
+}
+
+/* Cambia el estado de una bolsa en la planilla. Se actualiza la pantalla en
+   el momento y, si la planilla no responde, se vuelve atras y se avisa. */
+async function cambiarEstadoBolsa(b, estado) {
+  const antes = b.estado;
+  b.estado = estado;
+  renderLoteBolsas();
+  renderBolsasList();
+  try {
+    await gUpsert('Bolsas', 'id', { id: b.id, estado });
+    Object.assign(b, gStamp());
+  } catch (err) {
+    b.estado = antes;
+    renderLoteBolsas();
+    renderBolsasList();
+    toast(`No se pudo marcar la bolsa ${b.id} como ${estado}: ${err.message || err}`, true);
+  }
+}
+
+/* Paso a paso de la etiqueta: con producto elegido aparecen las bolsas; con
+   una bolsa tildada, los datos de la etiqueta, el registro del lote y la
+   impresion (clases requiere-producto / requiere-bolsa en index.html). */
+function syncPasos() {
+  const l = currentLabel();
+  const conProducto = !!String(l.codigo || l.producto || '').trim();
+  document.body.classList.toggle('paso-producto', conProducto);
+  document.body.classList.toggle('paso-bolsa', conProducto && loteBolsasSel.size > 0);
 }
 
 /* El vencimiento de la etiqueta es el de la bolsa usada. Con varias, el mas

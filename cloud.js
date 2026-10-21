@@ -603,6 +603,10 @@ function applyCatalog(c) {
     ...(clave ? { lote: generarLote(clave) } : {}),
     ...(otroProducto ? { venc: '' } : {})
   });
+  /* Lote nuevo: sus bolsas son las que tenga registradas (ninguna si es
+     nuevo). Se toma ya, sin esperar el repintado del registro de lotes, asi el
+     paso a paso no muestra un instante los datos con la bolsa del lote anterior. */
+  if (currentLote() !== loteQtyDe) loteBolsasDesde(findLote(currentLote()));
   if (c.tipo && BARCODE_RULES[c.tipo] && c.tipo !== state.cfg.barcodeType) {
     state.cfg.barcodeType = c.tipo;
     bcCache.clear();

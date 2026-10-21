@@ -324,9 +324,16 @@ un lote no se puede eliminar: se marca como agotada.
 
 Debajo de *Buscar producto*, **Bolsas usadas** lista las bolsas sin agotar del mismo producto
 que la etiqueta (o de todos, con *Mostrar bolsas de otros productos*) para tildar una o varias.
-Al tildarlas, la etiqueta toma **el vencimiento de la bolsa** (con varias, el que vence
-primero). Se guardan con *Registrar lote* / *Actualizar registro*. Así, desde un lote se sabe de
-qué bolsas salió, y desde una bolsa, en qué lotes se usó.
+Al tildar una, **queda en uso en la planilla en el momento** y la etiqueta toma **su
+vencimiento** (con varias, el que vence primero). Destildarla la devuelve a *disponible* si
+ningún otro lote la usa. La asociación con el lote se guarda con *Registrar lote* /
+*Actualizar registro*. Así, desde un lote se sabe de qué bolsas salió, y desde una bolsa, en qué
+lotes se usó. Si no hay bolsas del producto, un botón lleva a registrarla en *Bolsas*.
+
+**Paso a paso.** La pestaña de datos se va mostrando a medida que se completa: primero solo el
+buscador de producto; elegido el producto, las bolsas usadas; tildada una bolsa, los datos de
+la etiqueta, el registro de lotes y, al final de la lista, el estado (*Listo para imprimir* o
+lo que falte) con **Exportar PDF** e **Imprimir**.
 
 **Datos compartidos.** Con varias personas trabajando a la vez, cada guardado relee la
 planilla antes de escribir, para no pisar filas que otro haya agregado o borrado. Las listas

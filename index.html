@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261021-2020">
+<html lang="es" data-version="20261021-2038">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261021-2020">
+<link rel="stylesheet" href="styles.css?v=20261021-2038">
 </head>
 <body data-tab="datos">
 
@@ -42,11 +42,7 @@
     <button data-seccion="bolsas" aria-pressed="false">Bolsas</button>
   </nav>
   <div class="topbar-actions">
-    <span id="printStatus" class="status solo-etiquetas"></span>
     <button id="btnGoogle" class="btn ghost google">Conectar con Google</button>
-    <span class="sep solo-etiquetas"></span>
-    <button id="btnPdf" class="btn solo-etiquetas">Exportar PDF</button>
-    <button id="btnPrint" class="btn primary solo-etiquetas">Imprimir</button>
   </div>
 </header>
 
@@ -205,30 +201,35 @@
                  aria-expanded="false" aria-controls="catResults" aria-autocomplete="list">
           <div class="cat-results" id="catResults" role="listbox" hidden></div>
         </div>
-        <!-- Bolsas de granel de las que sale el lote (bolsas.js). Al tildarlas,
-             la etiqueta toma su vencimiento. -->
-        <div class="field">
-          <span>Bolsas usadas <span class="badge">opcional</span></span>
+        <p class="hint solo-sin-producto">Elegí el producto para empezar.</p>
+        <!-- Paso a paso (syncPasos en bolsas.js): con producto aparecen las
+             bolsas; con una bolsa tildada, los datos, el lote y la impresion. -->
+        <div class="field requiere-producto">
+          <span>Bolsas usadas</span>
           <div id="loteBolsas" class="bolsa-pick"></div>
           <label class="check"><input type="checkbox" id="loteBolsasTodas"> Mostrar bolsas de otros productos</label>
-          <p class="hint" id="loteBolsasAviso" hidden>Las bolsas elegidas se guardan al tocar
+          <p class="hint solo-sin-bolsa">Tildá la bolsa de la que sale el lote: queda <b>en uso</b>
+            y la etiqueta toma su vencimiento.</p>
+          <p class="hint" id="loteBolsasAviso" hidden>La asociacion con el lote se guarda al tocar
             <b>Registrar lote</b> / <b>Actualizar registro</b> (en Registro de lotes).</p>
         </div>
-        <p class="hint link" id="catLink"></p>
-        <div class="row2">
-          <button id="btnCatApply" class="btn small">Aplicar</button>
-          <button id="btnCatDelete" class="btn ghost small danger">Eliminar</button>
+        <div class="requiere-producto">
+          <p class="hint link" id="catLink"></p>
+          <div class="row2">
+            <button id="btnCatApply" class="btn small">Aplicar</button>
+            <button id="btnCatDelete" class="btn ghost small danger">Eliminar</button>
+          </div>
+          <button id="btnCatSave" class="btn ghost small wide">Guardar etiqueta actual en el catalogo</button>
+          <p class="hint">Cada producto tiene una <b>clave de 5 caracteres</b>; su codigo de barras
+            sale de ella (igual que <code>=TEXTO_A_DECIMAL()</code> en la planilla). Elegir un
+            producto de la lista completa la etiqueta y genera el <b>lote</b>
+            (<b>L-fecha-clave</b>, por ejemplo L-211026-sal1k). El <b>vencimiento</b> sale de la
+            bolsa usada.</p>
         </div>
-        <button id="btnCatSave" class="btn ghost small wide">Guardar etiqueta actual en el catalogo</button>
-        <p class="hint">Cada producto tiene una <b>clave de 5 caracteres</b>; su codigo de barras
-          sale de ella (igual que <code>=TEXTO_A_DECIMAL()</code> en la planilla). Elegir un
-          producto de la lista completa la etiqueta y genera el <b>lote</b>
-          (<b>L-fecha-clave</b>, por ejemplo L-211026-sal1k). El <b>vencimiento</b> sale de la
-          bolsa usada.</p>
       </div>
     </section>
 
-    <section class="group">
+    <section class="group requiere-bolsa">
       <h3>Datos de la etiqueta <span id="selInfo" class="badge">—</span></h3>
 
       <label class="field req">
@@ -303,7 +304,7 @@
       <button id="btnClearAll" class="btn ghost small wide danger">Vaciar todo</button>
     </section>
 
-    <section class="group">
+    <section class="group requiere-bolsa">
       <h3>Registro de lotes <span id="loteCount" class="badge">—</span></h3>
       <p class="hint cloud-msg">Conectate con Google para registrar lotes en la planilla.</p>
       <div class="cloud-body">
@@ -325,6 +326,16 @@
         <p class="hint">Guarda el lote de la etiqueta seleccionada con su codigo, producto,
           vencimiento y <b>cantidad de paquetes</b> (obligatoria), y una imagen de registro
           que va a la carpeta del equipo en Google Drive. <b>La imagen no se imprime.</b></p>
+      </div>
+    </section>
+
+    <!-- Al final de la lista: lo que falta (o "Listo para imprimir") y la salida. -->
+    <section class="group requiere-bolsa imprimir-box">
+      <h3>Imprimir</h3>
+      <span id="printStatus" class="status"></span>
+      <div class="row2">
+        <button id="btnPdf" class="btn">Exportar PDF</button>
+        <button id="btnPrint" class="btn primary">Imprimir</button>
       </div>
     </section>
 
@@ -643,12 +654,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261021-2020"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261021-2020"></script>
-<script src="google.js?v=20261021-2020"></script>
-<script src="browser-api.js?v=20261021-2020"></script>
-<script src="cloud.js?v=20261021-2020"></script>
-<script src="bolsas.js?v=20261021-2020"></script>
-<script src="app.js?v=20261021-2020"></script>
+<script src="config.js?v=20261021-2038"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261021-2038"></script>
+<script src="google.js?v=20261021-2038"></script>
+<script src="browser-api.js?v=20261021-2038"></script>
+<script src="cloud.js?v=20261021-2038"></script>
+<script src="bolsas.js?v=20261021-2038"></script>
+<script src="app.js?v=20261021-2038"></script>
 </body>
 </html>
