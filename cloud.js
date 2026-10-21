@@ -192,6 +192,8 @@ function cloudClear() {
   cloud.usuarios = [];
   cloud.ajustes = {};
   cloud.rol = '';
+  clearTimeout(syncTimer);
+  syncPending = null;
   imgCache.forEach((url) => URL.revokeObjectURL(url));
   imgCache.clear();
   refreshTemplateList();
@@ -368,6 +370,7 @@ function refreshCatalogUI() {
     dl.appendChild(o);
   });
   $('catCount').textContent = cloudReady() ? `${cloud.catalog.length} productos` : '—';
+  if (!syncPending) paintCatLink();
 }
 
 /* Busca por codigo, por clave (respetando mayusculas: "sal1k" y "SAL1K" son
@@ -380,6 +383,94 @@ function findCatalog(text) {
       || cloud.catalog.find((c) => c.clave === raw)
       || cloud.catalog.find((c) => c.producto.toLowerCase() === t)
       || null;
+}
+
+/* ---------------- Edicion del producto desde la etiqueta ---------------- */
+
+/* Una etiqueta cuyo codigo esta en el catalogo queda vinculada a ese
+   producto: lo que se cambie en sus datos (todo menos lote y vencimiento)
+   se guarda solo en la planilla, un momento despues de dejar de escribir.
+   Se guarda una copia de la etiqueta al momento de editar: si se esperara
+   al guardado para leerla, la seleccion pudo haber pasado a otra etiqueta. */
+const PRODUCT_FIELDS = ['producto', 'cantidad', 'unidad', 'ingredientes', 'infoExtra'];
+const SYNC_DELAY = 1200;
+let syncTimer = null;
+let syncPending = null;          // copia de la etiqueta editada, esperando guardarse
+let linkMsgTimer = null;
+
+const linkedProduct = (l) => {
+  const code = String((l && l.codigo) || '').trim();
+  return code ? cloud.catalog.find((c) => c.codigo === code) || null : null;
+};
+
+const productDiffers = (l, c) =>
+  PRODUCT_FIELDS.some((k) => String(l[k] || '') !== String(c[k] || '')) ||
+  JSON.stringify(cloneNutri(l.nutri)) !== JSON.stringify(cloneNutri(c.nutri));
+
+/* Linea de estado del catalogo. `estado`: saving | saved | incompleto | error;
+   sin estado describe la etiqueta seleccionada. */
+function paintCatLink(estado, detalle) {
+  const p = $('catLink');
+  clearTimeout(linkMsgTimer);
+  p.classList.remove('ok', 'bad');
+  if (!cloudReady()) { p.textContent = ''; return; }
+  const c = linkedProduct(currentLabel());
+  if (estado === 'saving') p.textContent = 'Guardando los cambios en el catalogo…';
+  else if (estado === 'saved') {
+    p.textContent = `Cambios guardados en "${detalle}".`;
+    p.classList.add('ok');
+    linkMsgTimer = setTimeout(() => paintCatLink(), 3000);
+  } else if (estado === 'incompleto') {
+    p.textContent = 'Falta el producto o la cantidad: el catalogo se actualiza cuando esten completos.';
+    p.classList.add('bad');
+  } else if (estado === 'error') {
+    p.textContent = 'No se pudo actualizar el producto: ' + detalle;
+    p.classList.add('bad');
+  } else if (c) {
+    p.textContent = `Etiqueta vinculada a "${c.producto}": los cambios en sus datos se guardan solos en el catalogo (menos lote y vencimiento).`;
+  } else {
+    p.textContent = '';
+  }
+}
+
+function catalogEdited() {
+  if (!cloudReady()) return;
+  const l = currentLabel();
+  if (!linkedProduct(l)) return;
+  syncPending = cloneLabel(l);
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncProduct, SYNC_DELAY);
+}
+
+async function syncProduct() {
+  const l = syncPending;
+  if (!l || !cloudReady()) return;
+  const c = linkedProduct(l);
+  if (!c || !productDiffers(l, c)) { syncPending = null; return paintCatLink(); }
+  if (!String(l.producto || '').trim() || !String(l.cantidad || '').trim()) return paintCatLink('incompleto');
+  // Otra operacion con la planilla en curso: se reintenta en un rato.
+  if (cloud.busy) { syncTimer = setTimeout(syncProduct, 800); return; }
+
+  syncPending = null;
+  const cambios = {
+    producto: l.producto, cantidad: l.cantidad, unidad: l.unidad,
+    ingredientes: l.ingredientes || '', infoExtra: l.infoExtra || '',
+    nutri: cloneNutri(l.nutri)
+  };
+  cloud.busy = true;
+  paintCatLink('saving');
+  try {
+    // clave, codigo y tipo no cambian: van tal cual estaban.
+    await gUpsert('Catalogo', 'codigo', catToRow({ ...c, ...cambios }));
+    Object.assign(c, cambios);
+    refreshCatalogUI();
+    paintCatLink('saved', c.producto);
+  } catch (err) {
+    syncPending = l;                 // queda pendiente: se reintenta con el proximo cambio
+    paintCatLink('error', err.message || String(err));
+  } finally {
+    cloud.busy = false;
+  }
 }
 
 /* ---------------- Nuevo producto ---------------- */
@@ -804,6 +895,15 @@ function bindCloudEvents() {
   });
 
   $('gateLogin').addEventListener('click', onGoogleClick);
+
+  /* Un cambio del producto todavia sin guardar (se guarda ~1 s despues de
+     dejar de escribir): el navegador pregunta antes de cerrar la pagina. */
+  window.addEventListener('beforeunload', (e) => {
+    if (!syncPending) return;
+    syncProduct();
+    e.preventDefault();
+    e.returnValue = '';
+  });
 }
 
 async function cloudInit() {

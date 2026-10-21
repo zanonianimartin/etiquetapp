@@ -810,6 +810,7 @@ function fillForm() {
   markMissing();
   syncNutriBadge();
   refreshLoteUI();
+  paintCatLink();
 }
 
 function readForm() {
@@ -1026,6 +1027,7 @@ function saveNutri() {
 
   closeNutri();
   syncNutriBadge();
+  catalogEdited();                    // la tabla tambien es dato del producto
   renderSheets();
   toast(nutri.on
     ? `Tabla nutricional con ${nutri.items.length} elementos` + (state.applyAll ? ' en todas las etiquetas' : '')
@@ -1262,11 +1264,16 @@ function bindEvents() {
 
   /* --- campos de la etiqueta --- */
   let editTimer = null;
-  const onEdit = () => {
+  const onEdit = (e) => {
     readForm();
     markMissing();
     refreshPrintState();            // el boton Imprimir reacciona al instante
     refreshLoteUI();
+    /* Los datos del producto se copian al catalogo (cloud.js). El codigo no
+       cuenta: cambiarlo es pasar a otro producto, no editar este. Lote y
+       vencimiento tampoco, pero de eso se encarga catalogEdited. */
+    if (e.target.id === 'fCodigo') paintCatLink();   // puede haber pasado a otro producto, o a ninguno
+    else catalogEdited();
     clearTimeout(editTimer);
     editTimer = setTimeout(renderSheets, 90);
   };

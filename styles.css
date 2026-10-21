@@ -635,6 +635,12 @@ details.adv summary:hover{color:var(--txt)}
 .prod-bc svg{height:100%; max-width:100%}
 .prod-bc .muted{color:#6b7280; text-align:center}
 #btnProdNew{margin:0 0 12px}
+
+/* Estado del producto vinculado a la etiqueta seleccionada. */
+.hint.link:empty{display:none}
+.hint.link{border-left:2px solid var(--accent); padding-left:8px}
+.hint.link.ok{border-color:var(--ok); color:#7fd6ab}
+.hint.link.bad{border-color:var(--danger); color:#ff9c95}
 .modal a{color:var(--accent)}
 
 /* Sin conexion, las secciones de la planilla se ven pero no se usan. */

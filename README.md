@@ -252,6 +252,14 @@ tocar su clave.
 Elegir un producto —desde el buscador, por clave, código o nombre, o directamente en el
 campo *Código de barras*— completa todo **menos el lote y el vencimiento**.
 
+**Los cambios se guardan solos.** Una etiqueta cuyo código está en el catálogo queda
+vinculada a ese producto (el panel del catálogo lo indica). Lo que se cambie en sus datos
+—producto, cantidad, unidad, ingredientes, información adicional o tabla nutricional— se
+guarda en la planilla un segundo después de dejar de escribir, y lo ve todo el equipo. El
+lote y el vencimiento no se guardan en el producto, y la clave y el código nunca cambian.
+Si el producto o la cantidad quedan vacíos, no se guarda nada hasta completarlos. Cambiar
+el código de la etiqueta no edita el producto: pasa a otro producto, o a ninguno.
+
 **Registro de lotes** (requiere conexión con Google). Asocia el lote de la etiqueta
 seleccionada con su código, producto y vencimiento, y opcionalmente con una imagen de
 registro (por ejemplo, una foto de la tirada), que se guarda en la carpeta del equipo en
