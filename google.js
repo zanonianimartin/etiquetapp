@@ -26,9 +26,10 @@ const TABS = {
      TEXTO_A_DECIMAL (ver textoADecimal en app.js). */
   Catalogo:   ['codigo', 'clave', 'tipo', 'producto', 'cantidad', 'unidad', 'ingredientes',
                'infoExtra', 'nutri', 'actualizado', 'por'],
-  /* `imagen` es el id del archivo en Drive y `enlace` su link para abrirlo
-     desde la planilla. */
-  Lotes:      ['lote', 'codigo', 'producto', 'vencimiento', 'imagen', 'archivo', 'enlace',
+  /* `paquetes`: cuantos paquetes salieron del lote (obligatorio al
+     registrarlo). `imagen` es el id del archivo en Drive y `enlace` su link
+     para abrirlo desde la planilla. */
+  Lotes:      ['lote', 'codigo', 'producto', 'vencimiento', 'paquetes', 'imagen', 'archivo', 'enlace',
                'actualizado', 'por'],
   /* Cuentas habilitadas para usar la app. `rol`: admin o usuario.
      `activo`: vacio o SI habilita; NO deshabilita sin borrar la fila.

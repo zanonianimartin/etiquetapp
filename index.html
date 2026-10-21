@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261020-2350">
+<html lang="es" data-version="20261020-2356">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261020-2350">
+<link rel="stylesheet" href="styles.css?v=20261020-2356">
 </head>
 <body data-tab="datos">
 
@@ -296,14 +296,18 @@
         <div class="lote-img" id="loteImgBox" hidden>
           <img id="loteImg" alt="Imagen del lote" title="Abrir en tamano real">
         </div>
+        <label class="field req">
+          <span>Cantidad de paquetes</span>
+          <input type="number" id="loteQty" min="1" step="1" inputmode="numeric" placeholder="120">
+        </label>
         <div class="row2">
           <button id="btnLoteSave" class="btn small">Registrar lote</button>
           <button id="btnLoteImg" class="btn ghost small">Adjuntar imagen…</button>
         </div>
         <button id="btnLoteImgDel" class="btn ghost small wide danger" hidden>Quitar imagen</button>
-        <p class="hint">Guarda el lote de la etiqueta seleccionada con su codigo, producto y
-          vencimiento, y una imagen de registro que va a la carpeta del equipo en Google
-          Drive. <b>La imagen no se imprime.</b></p>
+        <p class="hint">Guarda el lote de la etiqueta seleccionada con su codigo, producto,
+          vencimiento y <b>cantidad de paquetes</b> (obligatoria), y una imagen de registro
+          que va a la carpeta del equipo en Google Drive. <b>La imagen no se imprime.</b></p>
       </div>
     </section>
 
@@ -505,11 +509,11 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261020-2350"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261020-2350"></script>
-<script src="google.js?v=20261020-2350"></script>
-<script src="browser-api.js?v=20261020-2350"></script>
-<script src="cloud.js?v=20261020-2350"></script>
-<script src="app.js?v=20261020-2350"></script>
+<script src="config.js?v=20261020-2356"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261020-2356"></script>
+<script src="google.js?v=20261020-2356"></script>
+<script src="browser-api.js?v=20261020-2356"></script>
+<script src="cloud.js?v=20261020-2356"></script>
+<script src="app.js?v=20261020-2356"></script>
 </body>
 </html>

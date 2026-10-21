@@ -79,7 +79,8 @@ const catToRow = (c) => ({ ...c, nutri: JSON.stringify(cloneNutri(c.nutri)) });
 
 const loteFromRow = (r) => ({
   lote: String(r.lote).trim(), codigo: r.codigo || '', producto: r.producto || '',
-  vencimiento: r.vencimiento || '', imagen: r.imagen || '', archivo: r.archivo || '',
+  vencimiento: r.vencimiento || '', paquetes: r.paquetes || '',
+  imagen: r.imagen || '', archivo: r.archivo || '',
   enlace: r.enlace || '', actualizado: r.actualizado || '', por: r.por || ''
 });
 
@@ -669,12 +670,39 @@ function fechaCorta(iso) {
   return isNaN(d) ? '' : d.toLocaleDateString('es-UY');
 }
 
+/* Cantidad de paquetes del lote: obligatoria para registrarlo. Devuelve el
+   numero (entero mayor que 0) o null, y marca el campo si no es valido. */
+function lotePaquetes() {
+  const txt = String($('loteQty').value || '').trim();
+  const n = Number(txt);
+  const ok = /^\d+$/.test(txt) && n > 0;
+  $('loteQty').closest('.field').classList.toggle('missing', !ok);
+  return ok ? n : null;
+}
+
+function pedirPaquetes() {
+  if (lotePaquetes() !== null) return true;
+  toast('Cargá la cantidad de paquetes del lote (un numero entero mayor que 0).', true);
+  $('loteQty').focus();
+  return false;
+}
+
+/* El campo muestra lo guardado del lote seleccionado; solo se reemplaza al
+   pasar a otro lote, asi no se pisa lo que se esta escribiendo. */
+let loteQtyDe = null;
+
 async function paintLote() {
   refreshLoteDatalist();
   $('loteCount').textContent = cloudReady() ? `${cloud.lotes.length} registrados` : '—';
 
   const lote = currentLote();
   const reg = lote ? findLote(lote) : null;
+  if (lote !== loteQtyDe) {
+    loteQtyDe = lote;
+    $('loteQty').value = reg && reg.paquetes ? reg.paquetes : '';
+    $('loteQty').closest('.field').classList.remove('missing');
+  }
+  $('loteQty').disabled = !lote;
   const info = $('loteInfo');
   if (!lote) info.textContent = 'La etiqueta seleccionada todavia no tiene lote.';
   else if (!reg) info.textContent = `Lote ${lote}: sin registrar.`;
@@ -682,6 +710,7 @@ async function paintLote() {
     const cuando = fechaCorta(reg.actualizado);
     info.textContent = `Lote ${lote}: registrado` +
       (cuando ? ` el ${cuando}` : '') + (reg.por ? ` por ${reg.por}` : '') +
+      (reg.paquetes ? ` · ${reg.paquetes} paquetes` : ' · sin cantidad de paquetes') +
       (reg.imagen ? ' · con imagen' : ' · sin imagen');
   }
 
@@ -713,13 +742,15 @@ async function paintLote() {
   }
 }
 
-/* Guarda la fila del lote con los datos de la etiqueta seleccionada.
+/* Guarda la fila del lote con los datos de la etiqueta seleccionada y la
+   cantidad de paquetes del campo (si es valida; si no, queda la guardada).
    `extra` sobreescribe columnas (imagen); las que no trae se conservan. */
 async function writeLote(extra = {}) {
   const l = currentLabel();
+  const paquetes = lotePaquetes();
   const row = {
     lote: currentLote(), codigo: l.codigo || '', producto: l.producto || '',
-    vencimiento: l.venc || '', ...extra
+    vencimiento: l.venc || '', ...(paquetes !== null ? { paquetes: String(paquetes) } : {}), ...extra
   };
   await gUpsert('Lotes', 'lote', row);
   const prev = findLote(row.lote);
@@ -731,6 +762,7 @@ async function writeLote(extra = {}) {
 async function registerLote() {
   if (!requireCloud()) return;
   if (!currentLote()) return toast('Cargá el lote de la etiqueta.', true);
+  if (!pedirPaquetes()) return;
   const nuevo = !findLote(currentLote());
   const ok = await cloudTask('Registrando lote…', async () => { await writeLote(); return true; });
   if (!ok) return;
@@ -865,6 +897,8 @@ async function attachLoteImage() {
   if (!requireCloud()) return;
   const lote = currentLote();
   if (!lote) return toast('Cargá el lote de la etiqueta.', true);
+  // Adjuntar la imagen registra el lote, asi que tambien pide los paquetes.
+  if (!pedirPaquetes()) return;
   // El token se renueva antes de abrir el selector de archivos: despues el
   // navegador ya no considera que hubo un clic y bloquea el popup de Google.
   try { await gEnsureToken(); } catch (err) { return toast(err.message, true); }
@@ -1014,6 +1048,11 @@ function bindCloudEvents() {
 
   /* --- lotes --- */
   $('btnLoteSave').addEventListener('click', registerLote);
+  $('loteQty').addEventListener('input', () => {
+    // La marca roja se va apenas el valor es valido.
+    if ($('loteQty').closest('.field').classList.contains('missing')) lotePaquetes();
+  });
+  $('loteQty').addEventListener('keydown', (e) => { if (e.key === 'Enter') registerLote(); });
   $('btnLoteImg').addEventListener('click', attachLoteImage);
   $('btnLoteImgDel').addEventListener('click', removeLoteImage);
   $('loteImg').addEventListener('click', openLoteImage);

@@ -148,7 +148,7 @@ la app la agrega sola al conectarse.
 | Pestaña | Una fila por | Columnas |
 |---|---|---|
 | `Catalogo` | producto | codigo, clave, tipo, producto, cantidad, unidad, ingredientes, infoExtra, nutri, actualizado, por |
-| `Lotes` | lote | lote, codigo, producto, vencimiento, imagen, archivo, enlace, actualizado, por |
+| `Lotes` | lote | lote, codigo, producto, vencimiento, paquetes, imagen, archivo, enlace, actualizado, por |
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
@@ -272,7 +272,9 @@ producto, y la clave y el código nunca cambian. Si el producto o la cantidad qu
 no se guarda nada hasta completarlos.
 
 **Registro de lotes** (requiere conexión con Google). Asocia el lote de la etiqueta
-seleccionada con su código, producto y vencimiento, y opcionalmente con una imagen de
+seleccionada con su código, producto, vencimiento y **cantidad de paquetes** —obligatoria:
+sin un número entero mayor que 0 no se puede registrar el lote ni adjuntarle imagen; al
+elegir un lote ya registrado se muestra la cantidad guardada— y opcionalmente con una imagen de
 registro (por ejemplo, una foto de la tirada), que se guarda en la carpeta del equipo en
 Google Drive. **La imagen no se imprime**: se ve en el panel y, con un clic, se abre en Drive.
 Cambiar la imagen reemplaza la anterior. El campo *Lote*
