@@ -793,6 +793,32 @@ async function imageFolder() {
   return folder.id;
 }
 
+/* ---------------- Pantalla de espera ---------------- */
+
+/* Tapa la app mientras dura una operacion larga (la subida de una imagen):
+   el fondo frena los clics y bloqueo frena el teclado (Tab, Enter, atajos).
+   Se cierra siempre con hideBusy, tambien si la operacion falla. */
+let busyOn = false;
+
+function showBusy(msg) {
+  $('busyMsg').textContent = msg;
+  if (busyOn) return;
+  busyOn = true;
+  document.activeElement?.blur();      // si no, se seguiria escribiendo en el campo enfocado
+  $('busy').hidden = false;
+}
+
+function hideBusy() {
+  busyOn = false;
+  $('busy').hidden = true;
+}
+
+function bloquearTeclado(e) {
+  if (!busyOn) return;
+  e.preventDefault();
+  e.stopPropagation();
+}
+
 const tamano = (bytes) => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
 /* Achica las fotos antes de subirlas: una de celular pesa 4-8 MB, con datos
@@ -847,20 +873,28 @@ async function attachLoteImage() {
   if (!original) return;
   if (!original.type.startsWith('image/')) return toast('El archivo no es una imagen.', true);
   if (original.size > IMG_MAX) return toast('La imagen es demasiado grande (max 20 MB).', true);
-  const file = await shrinkPhoto(original);
-
-  // Se copia el id ahora: writeLote actualiza el registro en el lugar.
-  const anterior = (findLote(lote) || {}).imagen;
-  const ok = await cloudTask(`Subiendo imagen a Drive (${tamano(file.size)})…`, async () => {
-    const folder = await imageFolder();
-    const subida = await gUploadImage(file, `Lote ${lote} - ${file.name}`, folder);
-    imgCache.set(subida.id, URL.createObjectURL(file));
-    await writeLote({ imagen: subida.id, archivo: file.name, enlace: subida.webViewLink || '' });
-    // La anterior se manda a la papelera despues: si algo falla, el lote no
-    // queda sin ninguna.
-    if (anterior) await gTrash(anterior);
-    return true;
-  });
+  // Desde aca y hasta que termine (bien o mal) la app queda tapada.
+  showBusy('Preparando la imagen…');
+  let ok;
+  try {
+    const file = await shrinkPhoto(original);
+    showBusy(`Subiendo imagen a Drive (${tamano(file.size)})…`);
+    // Se copia el id ahora: writeLote actualiza el registro en el lugar.
+    const anterior = (findLote(lote) || {}).imagen;
+    ok = await cloudTask(null, async () => {
+      const folder = await imageFolder();
+      const subida = await gUploadImage(file, `Lote ${lote} - ${file.name}`, folder);
+      imgCache.set(subida.id, URL.createObjectURL(file));
+      showBusy('Guardando el registro del lote…');
+      await writeLote({ imagen: subida.id, archivo: file.name, enlace: subida.webViewLink || '' });
+      // La anterior se manda a la papelera despues: si algo falla, el lote no
+      // queda sin ninguna.
+      if (anterior) await gTrash(anterior);
+      return true;
+    });
+  } finally {
+    hideBusy();
+  }
   if (!ok) return;
   refreshLoteUI();
   toast(`Imagen del lote ${lote} guardada en Drive`);
@@ -996,13 +1030,17 @@ function bindCloudEvents() {
   $('gateLogin').addEventListener('click', onGoogleClick);
 
   /* Un cambio del producto todavia sin guardar (se guarda al salir del
-     campo): el navegador pregunta antes de cerrar la pagina. */
+     campo) o una imagen subiendose: el navegador pregunta antes de cerrar
+     la pagina. */
   window.addEventListener('beforeunload', (e) => {
-    if (!syncPending) return;
-    syncProduct();
+    if (!syncPending && !busyOn) return;
+    if (syncPending) syncProduct();
     e.preventDefault();
     e.returnValue = '';
   });
+
+  // Con la pantalla de espera no se puede tipear ni usar atajos (fase de captura: antes que nadie).
+  document.addEventListener('keydown', bloquearTeclado, true);
 }
 
 async function cloudInit() {
