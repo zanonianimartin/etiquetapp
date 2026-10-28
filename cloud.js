@@ -319,6 +319,7 @@ async function createSheet() {
 
 function refreshCatalogUI() {
   if (!$('catResults').hidden) renderCatResults();
+  renderVariantes();
   $('catCount').textContent = cloudReady() ? `${cloud.catalog.length} productos` : '—';
   if (!syncPending) paintCatLink();
 }
@@ -345,28 +346,66 @@ function searchCatalog(text) {
   return lista.sort((a, b) => a.producto.localeCompare(b.producto, 'es') || Number(a.cantidad) - Number(b.cantidad));
 }
 
+/* ---- Paso 1: el producto; paso 2: la presentacion (variante de cantidad) ----
+   La lista muestra cada producto una vez, con sus presentaciones. Elegido el
+   producto aparecen sus presentaciones para tocar; si tiene una sola se elige
+   sola, y si no tiene ninguna se ofrece crearla. */
+let prodElegido = '';             // producto elegido en el buscador (paso 1)
+
+/* Gramos aproximados de una presentacion, solo para ordenarlas (250 gr antes
+   que 1 kg). */
+const UNIDAD_GR = { mg: 0.001, gr: 1, kg: 1000, ml: 1, cc: 1, lt: 1000, un: 1 };
+const gramos = (c) => (Number(String(c.cantidad).replace(',', '.')) || 0) * (UNIDAD_GR[c.unidad] || 1);
+
+/* Productos con sus presentaciones del catalogo, mas los productos a granel
+   que todavia no tienen ninguna (seccion Bolsas). */
+function productosConVariantes() {
+  const map = new Map();
+  const grupo = (nombre) => {
+    const k = normalizar(nombre);
+    if (!k) return null;
+    if (!map.has(k)) map.set(k, { nombre, variantes: [] });
+    return map.get(k);
+  };
+  cloud.catalog.forEach((c) => { const g = grupo(c.producto); if (g) g.variantes.push(c); });
+  cloud.productos.forEach((p) => grupo(p.nombre));
+  map.forEach((g) => g.variantes.sort((x, y) => gramos(x) - gramos(y)));
+  return [...map.values()].sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'));
+}
+
+const grupoDe = (nombre) => productosConVariantes().find((g) => normalizar(g.nombre) === normalizar(nombre)) || null;
+
+/* Por nombre, o por la presentacion, el codigo o la clave de alguna variante. */
+function searchProductos(text) {
+  const palabras = normalizar(text).split(/\s+/).filter(Boolean);
+  return productosConVariantes().filter((g) => {
+    const donde = normalizar(`${g.nombre} ${g.variantes.map((v) => `${presentacion(v)} ${v.codigo} ${v.clave}`).join(' ')}`);
+    return palabras.every((p) => donde.includes(p));
+  });
+}
+
 function renderCatResults() {
   const box = $('catResults');
   box.innerHTML = '';
-  catShown = searchCatalog($('catSearch').value);
+  catShown = searchProductos($('catSearch').value);
   catActive = Math.min(catActive, catShown.length - 1);
   if (!catShown.length) {
-    box.appendChild(el('div', 'cat-empty', cloud.catalog.length ? 'Ningun producto coincide.' : 'El catalogo esta vacio.'));
+    box.appendChild(el('div', 'cat-empty', cloud.catalog.length || cloud.productos.length ? 'Ningun producto coincide.' : 'El catalogo esta vacio.'));
   }
-  catShown.slice(0, CAT_MAX).forEach((c, i) => {
+  catShown.slice(0, CAT_MAX).forEach((g, i) => {
     const it = el('div', 'cat-item' + (i === catActive ? ' on' : ''));
     it.setAttribute('role', 'option');
     const fila = el('div', 'cat-prod');
-    fila.appendChild(el('b', null, c.producto));
-    const pres = presentacion(c);
-    if (pres) fila.appendChild(el('span', null, pres));
+    fila.appendChild(el('b', null, g.nombre));
+    if (g.variantes.length > 1) fila.appendChild(el('span', null, `${g.variantes.length} presentaciones`));
     it.appendChild(fila);
-    it.appendChild(el('div', 'cat-code', c.codigo));
+    const pres = g.variantes.map(presentacion).filter(Boolean);
+    it.appendChild(el('div', 'cat-code', g.variantes.length ? pres.join(' · ') || g.variantes[0].codigo : 'sin presentaciones'));
     /* Se elige con click (en el celular no llega si el dedo se arrastro para
        desplazar la lista). El preventDefault de pointerdown evita que el
        campo pierda el foco y cierre la lista antes de ese click. */
     it.addEventListener('pointerdown', (e) => e.preventDefault());
-    it.addEventListener('click', () => pickCatResult(c));
+    it.addEventListener('click', () => elegirProducto(g.nombre));
     box.appendChild(it);
   });
   if (catShown.length > CAT_MAX) {
@@ -382,11 +421,73 @@ function closeCatResults() {
   catActive = -1;
 }
 
-function pickCatResult(c) {
-  $('catSearch').value = c.codigo;
+/* Paso 1: elegido el producto se muestran sus presentaciones. Con una sola,
+   se elige sola. */
+function elegirProducto(nombre) {
+  prodElegido = nombre;
+  $('catSearch').value = nombre;
   closeCatResults();
   $('catSearch').blur();          // en el celular, baja el teclado
+  const g = grupoDe(nombre);
+  if (g && g.variantes.length === 1) return pickVariante(g.variantes[0]);
+  renderVariantes();
+}
+
+/* Paso 2: una presentacion concreta completa la etiqueta. Tambien se llega
+   directo escribiendo su codigo o su clave. */
+function pickVariante(c) {
+  prodElegido = c.producto;
+  $('catSearch').value = c.producto;
+  closeCatResults();
   applyCatalog(c);
+  renderVariantes();
+}
+
+/* Botones de las presentaciones del producto elegido. Cuando cambia la
+   etiqueta (otra presentacion, u otra etiqueta seleccionada en la hoja), su
+   producto pasa a ser el elegido. Solo en ese momento: si no, elegir otro
+   producto en el buscador volveria al de la etiqueta. */
+let varCodigoVisto = null;
+
+function renderVariantes() {
+  const box = $('catVariantes');
+  if (!box) return;
+  const codigo = String(currentLabel().codigo || '').trim();
+  const actual = cloud.catalog.find((c) => c.codigo === codigo) || null;
+  if (codigo !== varCodigoVisto) {
+    varCodigoVisto = codigo;
+    if (actual) {
+      prodElegido = actual.producto;
+      $('catSearch').value = actual.producto;
+    }
+  }
+  // El boton marcado es la presentacion de la etiqueta, si es de este producto.
+  const marcada = actual && normalizar(actual.producto) === normalizar(prodElegido) ? actual : null;
+  $('pasoInicio').hidden = !!prodElegido;
+  if (!prodElegido) { box.hidden = true; return; }
+
+  const g = grupoDe(prodElegido);
+  const variantes = g ? g.variantes : [];
+  box.hidden = false;
+  const lista = $('catVarList');
+  lista.innerHTML = '';
+  variantes.forEach((v) => {
+    const b = el('button', 'btn variante' + (marcada && marcada.codigo === v.codigo ? ' on' : ''), presentacion(v) || v.codigo);
+    b.type = 'button';
+    b.title = `Codigo ${v.codigo}`;
+    b.addEventListener('click', () => pickVariante(v));
+    lista.appendChild(b);
+  });
+  $('catVarHint').textContent = !variantes.length
+    ? 'Este producto todavia no tiene presentaciones: creá la que vas a etiquetar.'
+    : marcada ? '' : 'Elegí la presentacion (cantidad) que vas a etiquetar.';
+}
+
+/* Vaciar todo vuelve al paso 1. */
+function resetBusquedaProducto() {
+  prodElegido = '';
+  $('catSearch').value = '';
+  renderVariantes();
 }
 
 /* Busca por codigo, por clave (respetando mayusculas: "sal1k" y "SAL1K" son
@@ -532,10 +633,12 @@ function paintProdClave() {
 
 /* Alta de una presentacion (clave, cantidad, codigo de barras). Arranca con
    los datos de la etiqueta seleccionada: lo habitual es armar la etiqueta,
-   revisarla en la vista previa y despues darla de alta. */
-function openProdModal() {
+   revisarla en la vista previa y despues darla de alta. Con `nombre` (Nueva
+   presentacion… del paso 2) arranca con ese producto y la cantidad vacia:
+   es otra presentacion del mismo producto. */
+function openProdModal(nombre = '') {
   if (!requireCloud()) return;
-  const l = currentLabel();
+  const l = nombre ? { ...emptyLabel(), producto: nombre } : currentLabel();
   $('pClave').value = '';
   fillProdProductos(l.producto || '');
   $('pCantidad').value = l.cantidad || '';
@@ -614,9 +717,8 @@ async function createProduct() {
   cloud.catalog.push(entry);
   refreshCatalogUI();
   closeProdModal();
-  $('catSearch').value = entry.codigo;
-  applyCatalog(entry);
-  toast(`Producto "${producto}" creado · codigo ${entry.codigo}`);
+  pickVariante(entry);                  // queda elegida en el paso 2 y en la etiqueta
+  toast(`Producto "${producto}" ${presentacion(entry)} creado · codigo ${entry.codigo}`);
 }
 /* Completa todo menos lote y vencimiento, que son de cada tirada. */
 /* Completa todo menos el vencimiento (sale de la bolsa usada o se carga a
@@ -681,16 +783,18 @@ async function saveToCatalog() {
   if (!ok) return;
   if (prev) Object.assign(prev, entry);
   else cloud.catalog.push(entry);
+  prodElegido = entry.producto;
+  $('catSearch').value = entry.producto;
   refreshCatalogUI();
-  $('catSearch').value = codigo;
   toast(prev ? `Codigo ${codigo} actualizado en el catalogo` : `Codigo ${codigo} agregado al catalogo`);
 }
 
 async function deleteFromCatalog() {
   if (!requireCloud()) return;
-  const c = findCatalog($('catSearch').value);
-  if (!c) return toast('Elegí un codigo del catalogo.', true);
-  if (!confirm(`¿Eliminar del catalogo el codigo ${c.codigo} (${c.producto})?`)) return;
+  // La presentacion de la etiqueta (la marcada en el paso 2), o lo escrito.
+  const c = cloud.catalog.find((x) => x.codigo === String(currentLabel().codigo || '').trim()) || findCatalog($('catSearch').value);
+  if (!c) return toast('Elegí la presentacion a eliminar.', true);
+  if (!confirm(`¿Eliminar del catalogo ${c.producto} ${presentacion(c)} (codigo ${c.codigo})?`)) return;
   const ok = await cloudTask('Eliminando del catalogo…', async () => {
     await gDelete('Catalogo', 'codigo', c.codigo);
     return true;
@@ -698,8 +802,7 @@ async function deleteFromCatalog() {
   if (!ok) return;
   cloud.catalog = cloud.catalog.filter((x) => x !== c);
   refreshCatalogUI();
-  $('catSearch').value = '';
-  toast(`Codigo ${c.codigo} eliminado del catalogo`);
+  toast(`${c.producto} ${presentacion(c)} (codigo ${c.codigo}) eliminado del catalogo`);
 }
 
 /* ---------------- Registro de lotes ---------------- */
@@ -1083,10 +1186,16 @@ function bindCloudEvents() {
   $('gModal').addEventListener('click', (e) => { if (e.target === $('gModal')) closeGModal(); });
 
   /* --- catalogo --- */
+  /* Lo escrito: un codigo o una clave van directo a esa presentacion; un
+     nombre de producto, a elegir su presentacion. */
   const aplicarBusqueda = () => {
-    const c = findCatalog($('catSearch').value);
-    if (!c) return toast('Ese codigo no esta en el catalogo.', true);
-    applyCatalog(c);
+    const txt = $('catSearch').value;
+    const raw = String(txt).trim();
+    const variante = cloud.catalog.find((c) => c.codigo === raw || c.clave === raw);
+    if (variante) return pickVariante(variante);
+    const g = grupoDe(txt);
+    if (g) return elegirProducto(g.nombre);
+    toast('Ese producto no esta en el catalogo.', true);
   };
   $('btnCatApply').addEventListener('click', () => { closeCatResults(); aplicarBusqueda(); });
   $('btnCatSave').addEventListener('click', saveToCatalog);
@@ -1099,7 +1208,7 @@ function bindCloudEvents() {
   cs.addEventListener('input', () => {
     catActive = -1;
     const exacto = cloud.catalog.find((x) => x.codigo === cs.value.trim());
-    if (exacto) return pickCatResult(exacto);   // pegaron o escribieron el codigo completo
+    if (exacto) return pickVariante(exacto);    // pegaron o escribieron el codigo completo
     renderCatResults();
   });
   cs.addEventListener('blur', () => setTimeout(closeCatResults, 120));
@@ -1116,8 +1225,8 @@ function bindCloudEvents() {
       if (on) on.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (abierta && catActive >= 0 && catShown[catActive]) return pickCatResult(catShown[catActive]);
-      if (abierta && catShown.length === 1) return pickCatResult(catShown[0]);
+      if (abierta && catActive >= 0 && catShown[catActive]) return elegirProducto(catShown[catActive].nombre);
+      if (abierta && catShown.length === 1) return elegirProducto(catShown[0].nombre);
       closeCatResults();
       aplicarBusqueda();
     } else if (e.key === 'Escape') {
@@ -1125,6 +1234,8 @@ function bindCloudEvents() {
     }
   });
   $('btnCatDelete').addEventListener('click', deleteFromCatalog);
+  // Otra cantidad del producto elegido: el alta con el producto ya puesto.
+  $('catVarNueva').addEventListener('click', () => openProdModal(prodElegido));
 
   /* --- nuevo producto --- */
   $('btnProdNew').addEventListener('click', () => openProdModal());

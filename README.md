@@ -271,7 +271,15 @@ cargado en la etiqueta. *Guardar etiqueta actual en el catálogo* actualiza un p
 ya existe con lo que tenga la etiqueta (por ejemplo, una tabla nutricional nueva), sin
 tocar su clave.
 
-Elegir un producto desde el buscador completa la etiqueta y **genera el lote**:
+**Buscar producto, en dos pasos.** Primero el **producto**: la lista muestra cada producto una
+sola vez, con sus presentaciones debajo ("100 gr · 500 gr · 1 kg"), e incluye los productos a
+granel que todavía no tienen ninguna ("sin presentaciones"). Después la **presentación**: un
+botón por cada cantidad cargada, ordenadas de menor a mayor. Con una sola presentación se
+elige sola; sin ninguna, se avisa. *Nueva presentación…* abre el alta con el producto ya
+puesto y la cantidad vacía, para agregar otra cantidad. Escribir el código o la clave de una
+presentación va directo a ella.
+
+Elegir la presentación completa la etiqueta y **genera el lote**:
 `L-fecha-clave`, con la fecha del día como DDMMAA (`L-211026-sal1k`). El campo *Lote* queda
 de solo lectura, para que siempre respete la nomenclatura; el mismo producto el mismo día da
 el mismo lote. Si el producto no tiene la clave guardada se deduce del código de barras (es la

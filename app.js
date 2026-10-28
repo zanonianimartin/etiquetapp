@@ -839,6 +839,7 @@ function fillForm() {
   refreshLoteUI();
   paintCatLink();
   syncPasos();                      // bolsas.js: que partes del formulario se muestran
+  renderVariantes();                // cloud.js: presentacion marcada de la etiqueta
 }
 
 function readForm() {
@@ -1193,6 +1194,7 @@ function bindEvents() {
   $('btnClearAll').addEventListener('click', () => {
     state.items = state.items.map(() => emptyLabel());
     state.sel = 0;
+    resetBusquedaProducto();          // cloud.js: el buscador vuelve al paso 1
     renderSheets(); fillForm();
     toast('Etiquetas vaciadas');
   });
