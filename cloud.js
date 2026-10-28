@@ -651,6 +651,10 @@ function openProdModal(nombre = '') {
     ? `La tabla nutricional (${filas} elementos) se copia de la etiqueta seleccionada.`
     : 'Sin tabla nutricional. Para agregarla despues: cargala en la etiqueta y usá "Guardar etiqueta actual en el catalogo".';
   $('pErr').textContent = '';
+  /* Con el producto ya elegido no se vuelve a pedir: queda en la lista (oculta)
+     para createProduct, y el titulo dice de que producto es la presentacion. */
+  $('pProductoField').hidden = !!nombre;
+  $('pTitulo').textContent = nombre ? `Nueva presentacion de ${nombre}` : 'Nuevo producto';
   paintProdClave();
   completarDesdeGranel();
   $('prodModal').classList.add('show');
