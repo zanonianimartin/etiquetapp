@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261021-2038">
+<html lang="es" data-version="20261028-1938">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261021-2038">
+<link rel="stylesheet" href="styles.css?v=20261028-1938">
 </head>
 <body data-tab="datos">
 
@@ -351,10 +351,14 @@
         etiquetas que salen de ella, en <b>Registro de lotes</b>.</p>
 
       <div class="row3">
-        <label class="field req">
+        <div class="field req">
           <span>Producto</span>
-          <select id="bProducto"></select>
-        </label>
+          <!-- Nuevo…: el mismo alta de producto del catalogo (clave de 5 caracteres). -->
+          <div class="prov-row">
+            <select id="bProducto" aria-label="Producto"></select>
+            <button id="bProdNuevo" class="btn ghost small" type="button">Nuevo…</button>
+          </div>
+        </div>
         <!-- Solo al registrar: varias bolsas iguales, con ids seguidos. -->
         <label class="field req" id="bCantidadField">
           <span>Cantidad de bolsas</span>
@@ -368,7 +372,9 @@
         </label>
         <label class="field req">
           <span>Peso (kg)</span>
-          <input type="number" id="bPeso" min="0.01" step="0.01" inputmode="decimal" value="25">
+          <!-- Texto y no number: en el celular el decimal sale con coma (25,5) y un
+               input number la descarta. Lo interpreta leerDecimal en bolsas.js. -->
+          <input type="text" id="bPeso" inputmode="decimal" autocomplete="off" value="25" placeholder="25,5">
         </label>
       </div>
       <div class="row2">
@@ -378,7 +384,7 @@
         </label>
         <label class="field req">
           <span>Precio de compra ($)</span>
-          <input type="number" id="bPrecio" min="0" step="0.01" inputmode="decimal" placeholder="1250">
+          <input type="text" id="bPrecio" inputmode="decimal" autocomplete="off" placeholder="1.250,50">
         </label>
       </div>
       <div class="field">
@@ -654,12 +660,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261021-2038"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261021-2038"></script>
-<script src="google.js?v=20261021-2038"></script>
-<script src="browser-api.js?v=20261021-2038"></script>
-<script src="cloud.js?v=20261021-2038"></script>
-<script src="bolsas.js?v=20261021-2038"></script>
-<script src="app.js?v=20261021-2038"></script>
+<script src="config.js?v=20261028-1938"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-1938"></script>
+<script src="google.js?v=20261028-1938"></script>
+<script src="browser-api.js?v=20261028-1938"></script>
+<script src="cloud.js?v=20261028-1938"></script>
+<script src="bolsas.js?v=20261028-1938"></script>
+<script src="app.js?v=20261028-1938"></script>
 </body>
 </html>

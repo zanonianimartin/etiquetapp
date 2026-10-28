@@ -527,11 +527,17 @@ function paintProdClave() {
   $('pCodigo').textContent = r.ok ? `Codigo ${r.codigo} · CODE128` + (r.aviso ? ` · ${r.aviso}` : '') : '';
 }
 
-/* Arranca con los datos de la etiqueta seleccionada: lo habitual es armar
-   la etiqueta, revisarla en la vista previa y despues darla de alta. */
-function openProdModal() {
+/* Desde donde se abrio el alta: 'etiquetas' (catalogo) o 'bolsas' (el boton
+   Nuevo… junto al producto de la bolsa). */
+let prodDesde = 'etiquetas';
+
+/* Desde el catalogo arranca con los datos de la etiqueta seleccionada: lo
+   habitual es armar la etiqueta, revisarla en la vista previa y despues darla
+   de alta. Desde Bolsas arranca vacia: la etiqueta no tiene nada que ver. */
+function openProdModal(desde = 'etiquetas') {
   if (!requireCloud()) return;
-  const l = currentLabel();
+  prodDesde = desde;
+  const l = desde === 'bolsas' ? emptyLabel() : currentLabel();
   $('pClave').value = '';
   $('pProducto').value = l.producto || '';
   $('pCantidad').value = l.cantidad || '';
@@ -562,7 +568,7 @@ async function createProduct() {
   const cantidad = $('pCantidad').value.trim();
   if (!producto || !cantidad) { $('pErr').textContent = 'Cargá el producto y la cantidad.'; return; }
 
-  const l = currentLabel();
+  const l = prodDesde === 'bolsas' ? emptyLabel() : currentLabel();
   const entry = {
     codigo: r.codigo, clave, tipo: 'CODE128',
     producto, cantidad, unidad: $('pUnidad').value,
@@ -581,8 +587,14 @@ async function createProduct() {
   cloud.catalog.push(entry);
   refreshCatalogUI();
   closeProdModal();
-  $('catSearch').value = entry.codigo;
-  applyCatalog(entry);
+  if (prodDesde === 'bolsas') {
+    // Queda elegido en la bolsa que se esta cargando; la etiqueta no se toca.
+    fillBolsaProductos(entry.producto);
+    $('bProducto').closest('.field').classList.remove('missing');
+  } else {
+    $('catSearch').value = entry.codigo;
+    applyCatalog(entry);
+  }
   toast(`Producto "${producto}" creado · codigo ${entry.codigo}`);
 }
 
@@ -1095,7 +1107,7 @@ function bindCloudEvents() {
   $('btnCatDelete').addEventListener('click', deleteFromCatalog);
 
   /* --- nuevo producto --- */
-  $('btnProdNew').addEventListener('click', openProdModal);
+  $('btnProdNew').addEventListener('click', () => openProdModal('etiquetas'));
   $('pClave').addEventListener('input', paintProdClave);
   $('pOk').addEventListener('click', createProduct);
   $('pCancel').addEventListener('click', closeProdModal);

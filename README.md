@@ -300,8 +300,11 @@ sugiere los lotes ya registrados.
 **Bolsas de granel** (sección *Bolsas* del menú de arriba). Trazabilidad de lo que se compra
 a granel y se fracciona. Cada bolsa que llega se registra con **producto** (de los nombres del
 catálogo, sin presentación: una bolsa de *Pimienta blanca molida* sirve para los paquetes de
-250 g y de 500 g), **fecha de ingreso** (hoy, por defecto), **peso** (25 kg por defecto),
-**vencimiento**, **precio de compra**, y opcionalmente **proveedor**, **lote del proveedor** y
+250 g y de 500 g; si el producto todavía no existe, *Nuevo…* abre el mismo alta de producto
+del catálogo y lo deja elegido), **fecha de ingreso** (hoy, por defecto), **peso** (25 kg por
+defecto; acepta decimales con coma o punto, 25,5 o 25.5),
+**vencimiento**, **precio de compra** (también con coma decimal y punto de miles, 1.250,50), y
+opcionalmente **proveedor**, **lote del proveedor** y
 una **foto de su etiqueta** (va a la carpeta de imágenes de Drive, con la misma subida y
 pantalla de espera que las fotos de lotes). Recibe un ID correlativo: `B-0001`, `B-0002`…
 

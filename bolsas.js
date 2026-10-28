@@ -53,6 +53,23 @@ const fechaUY = (iso) => {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(iso || '');
 };
 
+/* Numero escrito a mano, con coma o punto decimal ("25,5", "25.5"). Con
+   `miles`, para precios, acepta ademas el punto de miles: "1.250,50" y
+   "1.250" son 1250,5 y 1250 (un punto seguido de exactamente 3 cifras se toma
+   como miles). Devuelve null si no es un numero >= 0. En la planilla se
+   guarda con punto, como cualquier numero. */
+function leerDecimal(txt, miles = false) {
+  let s = String(txt || '').trim().replace(/\s/g, '');
+  if (!s) return null;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');        // 1.250,50 / 25,5
+  else if (miles && /^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // 1.250
+  if (!/^\d+(\.\d+)?$/.test(s)) return null;
+  return Number(s);
+}
+
+/* Al reves, para mostrar en el formulario lo guardado: "25.5" -> "25,5". */
+const decimalUY = (v) => String(v ?? '').replace('.', ',');
+
 const kilos = (n) => `${Number(n).toLocaleString('es-UY', { maximumFractionDigits: 3 })} kg`;
 const pesos = (n) => '$ ' + Number(n).toLocaleString('es-UY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -192,9 +209,9 @@ function resetBolsaForm(b = null) {
   $('bTitulo').textContent = b ? `Editar bolsa ${b.id}` : 'Registrar bolsa';
   fillBolsaProductos(b ? b.producto : '');
   $('bIngreso').value = b ? b.ingreso : hoyISO();
-  $('bPeso').value = b ? b.peso : '25';
+  $('bPeso').value = b ? decimalUY(b.peso) : '25';
   $('bVenc').value = b ? b.vencimiento : '';
-  $('bPrecio').value = b ? b.precio : '';
+  $('bPrecio').value = b ? decimalUY(b.precio) : '';
   fillProveedores(b ? b.proveedor : '');
   $('bLoteProv').value = b ? b.loteProveedor : '';
   // Varias bolsas iguales se registran juntas; al editar se edita una sola.
@@ -252,15 +269,14 @@ function leerBolsaForm() {
   };
   const producto = $('bProducto').value.trim();
   const ingreso = $('bIngreso').value;
-  const peso = Number($('bPeso').value);
+  const peso = leerDecimal($('bPeso').value);
   const venc = $('bVenc').value;
-  const precioTxt = String($('bPrecio').value).trim();
-  const precio = Number(precioTxt);
+  const precio = leerDecimal($('bPrecio').value, true);
   marcar('bProducto', !producto, 'Elegí el producto de la bolsa.');
   marcar('bIngreso', !/^\d{4}-\d{2}-\d{2}$/.test(ingreso), 'Cargá la fecha de ingreso.');
-  marcar('bPeso', !(peso > 0), 'Cargá el peso de la bolsa en kg.');
+  marcar('bPeso', !(peso > 0), 'Cargá el peso de la bolsa en kg (por ejemplo 25 o 25,5).');
   marcar('bVenc', !/^\d{4}-\d{2}-\d{2}$/.test(venc), 'Cargá el vencimiento de la bolsa.');
-  marcar('bPrecio', precioTxt === '' || !(precio >= 0), 'Cargá el precio de compra.');
+  marcar('bPrecio', precio === null, 'Cargá el precio de compra (por ejemplo 1250 o 1.250,50).');
   const cantTxt = String($('bCantidad').value).trim();
   const cantidad = bolsaEdit ? 1 : Number(cantTxt);
   marcar('bCantidad', !bolsaEdit && !(/^\d+$/.test(cantTxt) && cantidad >= 1 && cantidad <= BOLSAS_MAX_JUNTAS),
@@ -609,6 +625,9 @@ function bindBolsasEvents() {
   $('bBuscar').addEventListener('input', renderBolsasList);
   $('bFiltro').addEventListener('change', renderBolsasList);
   $('loteBolsasTodas').addEventListener('change', renderLoteBolsas);
+
+  // Producto que todavia no esta en el catalogo: el mismo alta que en Etiquetas.
+  $('bProdNuevo').addEventListener('click', () => openProdModal('bolsas'));
 
   /* --- proveedores --- */
   $('bProveedor').addEventListener('change', () => { $('bProvEditar').disabled = !$('bProveedor').value; });
