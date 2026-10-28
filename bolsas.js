@@ -115,8 +115,13 @@ function productosGranel() {
 /* Ventana "Nuevo producto" de Bolsas: nombre, ingredientes e informacion
    adicional. La cantidad, la clave y el codigo de barras son de cada
    presentacion y se cargan en Etiquetas (Nuevo producto del catalogo). */
-function openBaseModal() {
+/* Para quien se abrio: 'bolsa' (formulario de Bolsas) o 'presentacion' (alta
+   de producto de Etiquetas). Ahi queda elegido el producto nuevo. */
+let baseDestino = 'bolsa';
+
+function openBaseModal(destino = 'bolsa') {
   if (!requireCloud()) return;
+  baseDestino = destino;
   $('baNombre').value = '';
   $('baIngr').value = '';
   $('baInfo').value = '';
@@ -140,8 +145,14 @@ async function guardarBase() {
   if (!ok) return;
   cloud.productos.push(base);
   closeBaseModal();
-  fillBolsaProductos(nombre);            // queda elegido en la bolsa
-  $('bProducto').closest('.field').classList.remove('missing');
+  if (baseDestino === 'presentacion') {
+    // Queda elegido en el alta de producto, con sus ingredientes e info.
+    fillProdProductos(nombre);
+    completarDesdeGranel(true);
+  } else {
+    fillBolsaProductos(nombre);          // queda elegido en la bolsa
+    $('bProducto').closest('.field').classList.remove('missing');
+  }
   toast(`Producto "${nombre}" guardado`);
 }
 
@@ -673,7 +684,7 @@ function bindBolsasEvents() {
   $('loteBolsasTodas').addEventListener('change', renderLoteBolsas);
 
   // Producto a granel que todavia no existe: nombre, ingredientes e info.
-  $('bProdNuevo').addEventListener('click', openBaseModal);
+  $('bProdNuevo').addEventListener('click', () => openBaseModal('bolsa'));
   $('baOk').addEventListener('click', guardarBase);
   $('baCancelar').addEventListener('click', closeBaseModal);
   $('baseModal').addEventListener('click', (e) => { if (e.target === $('baseModal')) closeBaseModal(); });

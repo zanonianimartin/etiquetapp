@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261028-1954">
+<html lang="es" data-version="20261028-2006">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261028-1954">
+<link rel="stylesheet" href="styles.css?v=20261028-2006">
 </head>
 <body data-tab="datos">
 
@@ -496,10 +496,15 @@
     <div class="prod-bc" id="pBc"></div>
     <p class="hint" id="pCodigo"></p>
 
-    <label class="field req">
+    <!-- Los productos de la seccion Bolsas (fillProdProductos en cloud.js);
+         Nuevo… da de alta uno a granel encima de esta ventana. -->
+    <div class="field req">
       <span>Producto</span>
-      <input type="text" id="pProducto" maxlength="80" placeholder="Ej: Sal fina yodada">
-    </label>
+      <div class="prov-row">
+        <select id="pProducto" aria-label="Producto"></select>
+        <button id="pProdBase" class="btn ghost small" type="button">Nuevo…</button>
+      </div>
+    </div>
     <div class="row3">
       <label class="field req">
         <span>Cantidad</span>
@@ -689,12 +694,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261028-1954"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261028-1954"></script>
-<script src="google.js?v=20261028-1954"></script>
-<script src="browser-api.js?v=20261028-1954"></script>
-<script src="cloud.js?v=20261028-1954"></script>
-<script src="bolsas.js?v=20261028-1954"></script>
-<script src="app.js?v=20261028-1954"></script>
+<script src="config.js?v=20261028-2006"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-2006"></script>
+<script src="google.js?v=20261028-2006"></script>
+<script src="browser-api.js?v=20261028-2006"></script>
+<script src="cloud.js?v=20261028-2006"></script>
+<script src="bolsas.js?v=20261028-2006"></script>
+<script src="app.js?v=20261028-2006"></script>
 </body>
 </html>

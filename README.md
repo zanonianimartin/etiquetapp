@@ -157,9 +157,10 @@ la app la agrega sola al conectarse.
 en la bolsa) tiene solo nombre, ingredientes e información adicional. Cada **presentación**
 que sale de él (250 g, 500 g…) es un producto del `Catalogo`, con su cantidad, su clave y su
 código de barras: la cantidad va en la etiqueta, y la bolsa tiene su propio peso. Al dar de
-alta una presentación (*Etiquetas → Nuevo producto*) con el nombre de un producto a granel, se
-completan solos sus ingredientes y su información adicional. La lista de productos de la bolsa
-muestra los productos a granel y los nombres del catálogo.
+alta una presentación (*Etiquetas → Nuevo producto*), el producto se **elige de la lista de
+productos de Bolsas** (los a granel más los nombres del catálogo) y se completan solos sus
+ingredientes y su información adicional; si todavía no existe, *Nuevo…* lo crea ahí mismo.
+Cambiar de producto en la lista reemplaza esos datos, para no mezclar los de dos productos.
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 

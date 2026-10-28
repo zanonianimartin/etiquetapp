@@ -537,7 +537,7 @@ function openProdModal() {
   if (!requireCloud()) return;
   const l = currentLabel();
   $('pClave').value = '';
-  $('pProducto').value = l.producto || '';
+  fillProdProductos(l.producto || '');
   $('pCantidad').value = l.cantidad || '';
   $('pUnidad').innerHTML = $('fUnidad').innerHTML;
   $('pUnidad').value = l.unidad || 'gr';
@@ -554,13 +554,32 @@ function openProdModal() {
   setTimeout(() => $('pClave').focus(), 30);
 }
 
-/* Si el nombre es el de un producto a granel (seccion Bolsas), trae sus
-   ingredientes e informacion adicional, sin pisar lo que ya este escrito. */
-function completarDesdeGranel() {
-  const base = findBase($('pProducto').value);       // bolsas.js
+/* La lista de productos del alta: los mismos de la seccion Bolsas (los a
+   granel mas los nombres del catalogo, ver productosGranel en bolsas.js).
+   Si la etiqueta trae un nombre que no esta en la lista, se agrega igual para
+   no perderlo. */
+function fillProdProductos(actual) {
+  const sel = $('pProducto');
+  const lista = productosGranel();
+  if (actual && !lista.some((p) => normalizar(p) === normalizar(actual))) lista.unshift(actual);
+  sel.innerHTML = '';
+  sel.appendChild(new Option(lista.length ? '— elegí un producto —' : '— no hay productos: creá uno con Nuevo… —', ''));
+  lista.forEach((p) => sel.appendChild(new Option(p, p)));
+  sel.value = (actual && lista.find((p) => normalizar(p) === normalizar(actual))) || '';
+}
+
+/* Trae los ingredientes y la informacion adicional del producto elegido: del
+   producto a granel (seccion Bolsas) o, si no lo hay, de otra presentacion
+   del catalogo con el mismo nombre. Al abrir la ventana (`pisar` false) solo
+   completa lo vacio, para respetar lo que traia la etiqueta; al cambiar de
+   producto en la lista los reemplaza, para no mezclar los de dos productos. */
+function completarDesdeGranel(pisar = false) {
+  const nombre = $('pProducto').value;
+  const base = findBase(nombre)                                    // bolsas.js
+    || cloud.catalog.find((c) => normalizar(c.producto) === normalizar(nombre));
   if (!base) return;
-  if (!$('pIngredientes').value.trim()) $('pIngredientes').value = base.ingredientes;
-  if (!$('pInfoExtra').value.trim()) $('pInfoExtra').value = base.infoExtra;
+  if (pisar || !$('pIngredientes').value.trim()) $('pIngredientes').value = base.ingredientes || '';
+  if (pisar || !$('pInfoExtra').value.trim()) $('pInfoExtra').value = base.infoExtra || '';
 }
 
 const closeProdModal = () => $('prodModal').classList.remove('show');
@@ -1109,7 +1128,9 @@ function bindCloudEvents() {
 
   /* --- nuevo producto --- */
   $('btnProdNew').addEventListener('click', () => openProdModal());
-  $('pProducto').addEventListener('change', completarDesdeGranel);
+  $('pProducto').addEventListener('change', () => completarDesdeGranel(true));
+  // Producto a granel que todavia no existe: se crea encima de esta ventana.
+  $('pProdBase').addEventListener('click', () => openBaseModal('presentacion'));
   $('pClave').addEventListener('input', paintProdClave);
   $('pOk').addEventListener('click', createProduct);
   $('pCancel').addEventListener('click', closeProdModal);
