@@ -39,6 +39,10 @@ const TABS = {
      de la foto de la etiqueta de la bolsa. */
   Bolsas:     ['id', 'ingreso', 'producto', 'proveedor', 'loteProveedor', 'peso', 'vencimiento',
                'precio', 'estado', 'foto', 'archivo', 'enlace', 'actualizado', 'por'],
+  /* Productos a granel (lo que viene en la bolsa): solo nombre, ingredientes
+     e informacion adicional. Sin cantidad, clave ni codigo: eso es de cada
+     presentacion, en Catalogo. Las bolsas se asocian por `nombre`. */
+  Productos:  ['nombre', 'ingredientes', 'infoExtra', 'actualizado', 'por'],
   /* Proveedores de las bolsas de granel. `nombre` es la clave: es lo que
      queda escrito en la columna `proveedor` de cada bolsa. */
   Proveedores: ['nombre', 'telefono', 'email', 'notas', 'actualizado', 'por'],

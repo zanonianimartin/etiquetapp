@@ -16,6 +16,7 @@ const cloud = {
   lotes: [],          // { lote, codigo, producto, vencimiento, paquetes, bolsas, imagen, archivo, enlace, actualizado, por }
   bolsas: [],         // bolsas de granel: ver bolsas.js
   proveedores: [],    // { nombre, telefono, email, notas }: ver bolsas.js
+  productos: [],      // productos a granel { nombre, ingredientes, infoExtra }: ver bolsas.js
   usuarios: [],       // filas activas de la pestana Usuarios
   ajustes: {},        // pestana Ajustes: clave -> valor
   loaded: 0,          // momento de la ultima carga completa
@@ -127,9 +128,9 @@ function handleDenied(err) {
 
 async function cloudLoadAll() {
   await gEnsureToken();               // una sola renovacion para todas las lecturas
-  const [usu, cat, lot, aju, bol, prv] = await Promise.all([
+  const [usu, cat, lot, aju, bol, prv, pro] = await Promise.all([
     gReadTab('Usuarios'), gReadTab('Catalogo'), gReadTab('Lotes'), gReadTab('Ajustes'),
-    gReadTab('Bolsas'), gReadTab('Proveedores')
+    gReadTab('Bolsas'), gReadTab('Proveedores'), gReadTab('Productos')
   ]);
   cloud.rol = await checkAccess(usu.rows);
   cloud.usuarios = usu.rows.filter((r) => String(r.email || '').trim() && esActivo(r.activo));
@@ -138,6 +139,7 @@ async function cloudLoadAll() {
   cloud.lotes = lot.rows.filter((r) => String(r.lote || '').trim()).map(loteFromRow);
   cloud.bolsas = bol.rows.filter((r) => String(r.id || '').trim()).map(bolsaFromRow);   // bolsas.js
   cloud.proveedores = prv.rows.filter((r) => String(r.nombre || '').trim()).map(provFromRow);
+  cloud.productos = pro.rows.filter((r) => String(r.nombre || '').trim()).map(baseFromRow);     // bolsas.js
   cloud.loaded = Date.now();
 
   refreshCatalogUI();
@@ -180,6 +182,7 @@ function cloudClear() {
   cloud.ajustes = {};
   cloud.bolsas = [];
   cloud.proveedores = [];
+  cloud.productos = [];
   cloud.rol = '';
   clearTimeout(syncTimer);
   syncPending = null;
@@ -527,17 +530,12 @@ function paintProdClave() {
   $('pCodigo').textContent = r.ok ? `Codigo ${r.codigo} · CODE128` + (r.aviso ? ` · ${r.aviso}` : '') : '';
 }
 
-/* Desde donde se abrio el alta: 'etiquetas' (catalogo) o 'bolsas' (el boton
-   Nuevo… junto al producto de la bolsa). */
-let prodDesde = 'etiquetas';
-
-/* Desde el catalogo arranca con los datos de la etiqueta seleccionada: lo
-   habitual es armar la etiqueta, revisarla en la vista previa y despues darla
-   de alta. Desde Bolsas arranca vacia: la etiqueta no tiene nada que ver. */
-function openProdModal(desde = 'etiquetas') {
+/* Alta de una presentacion (clave, cantidad, codigo de barras). Arranca con
+   los datos de la etiqueta seleccionada: lo habitual es armar la etiqueta,
+   revisarla en la vista previa y despues darla de alta. */
+function openProdModal() {
   if (!requireCloud()) return;
-  prodDesde = desde;
-  const l = desde === 'bolsas' ? emptyLabel() : currentLabel();
+  const l = currentLabel();
   $('pClave').value = '';
   $('pProducto').value = l.producto || '';
   $('pCantidad').value = l.cantidad || '';
@@ -551,8 +549,18 @@ function openProdModal(desde = 'etiquetas') {
     : 'Sin tabla nutricional. Para agregarla despues: cargala en la etiqueta y usá "Guardar etiqueta actual en el catalogo".';
   $('pErr').textContent = '';
   paintProdClave();
+  completarDesdeGranel();
   $('prodModal').classList.add('show');
   setTimeout(() => $('pClave').focus(), 30);
+}
+
+/* Si el nombre es el de un producto a granel (seccion Bolsas), trae sus
+   ingredientes e informacion adicional, sin pisar lo que ya este escrito. */
+function completarDesdeGranel() {
+  const base = findBase($('pProducto').value);       // bolsas.js
+  if (!base) return;
+  if (!$('pIngredientes').value.trim()) $('pIngredientes').value = base.ingredientes;
+  if (!$('pInfoExtra').value.trim()) $('pInfoExtra').value = base.infoExtra;
 }
 
 const closeProdModal = () => $('prodModal').classList.remove('show');
@@ -568,7 +576,7 @@ async function createProduct() {
   const cantidad = $('pCantidad').value.trim();
   if (!producto || !cantidad) { $('pErr').textContent = 'Cargá el producto y la cantidad.'; return; }
 
-  const l = prodDesde === 'bolsas' ? emptyLabel() : currentLabel();
+  const l = currentLabel();
   const entry = {
     codigo: r.codigo, clave, tipo: 'CODE128',
     producto, cantidad, unidad: $('pUnidad').value,
@@ -587,17 +595,10 @@ async function createProduct() {
   cloud.catalog.push(entry);
   refreshCatalogUI();
   closeProdModal();
-  if (prodDesde === 'bolsas') {
-    // Queda elegido en la bolsa que se esta cargando; la etiqueta no se toca.
-    fillBolsaProductos(entry.producto);
-    $('bProducto').closest('.field').classList.remove('missing');
-  } else {
-    $('catSearch').value = entry.codigo;
-    applyCatalog(entry);
-  }
+  $('catSearch').value = entry.codigo;
+  applyCatalog(entry);
   toast(`Producto "${producto}" creado · codigo ${entry.codigo}`);
 }
-
 /* Completa todo menos lote y vencimiento, que son de cada tirada. */
 /* Completa todo menos el vencimiento (sale de la bolsa usada o se carga a
    mano). El lote se genera solo: L-fecha-clave (generarLote en app.js). Si
@@ -1107,7 +1108,8 @@ function bindCloudEvents() {
   $('btnCatDelete').addEventListener('click', deleteFromCatalog);
 
   /* --- nuevo producto --- */
-  $('btnProdNew').addEventListener('click', () => openProdModal('etiquetas'));
+  $('btnProdNew').addEventListener('click', () => openProdModal());
+  $('pProducto').addEventListener('change', completarDesdeGranel);
   $('pClave').addEventListener('input', paintProdClave);
   $('pOk').addEventListener('click', createProduct);
   $('pCancel').addEventListener('click', closeProdModal);

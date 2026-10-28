@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261028-1938">
+<html lang="es" data-version="20261028-1954">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261028-1938">
+<link rel="stylesheet" href="styles.css?v=20261028-1954">
 </head>
 <body data-tab="datos">
 
@@ -529,6 +529,35 @@
   </div>
 </div>
 
+<!-- Modal de producto a granel (bolsas.js): sin cantidad, clave ni codigo. -->
+<div id="baseModal" class="modal-bg no-print">
+  <div class="modal md">
+    <h4>Nuevo producto</h4>
+    <label class="field req">
+      <span>Nombre del producto</span>
+      <input type="text" id="baNombre" maxlength="80" placeholder="Coco rayado">
+    </label>
+    <label class="field">
+      <span>Ingredientes <span class="badge">opcional</span></span>
+      <textarea id="baIngr" rows="3" maxlength="400" spellcheck="false"></textarea>
+    </label>
+    <label class="field">
+      <span>Informacion adicional <span class="badge">opcional</span></span>
+      <input type="text" id="baInfo" maxlength="120" placeholder="Industria Uruguaya - Conservar en lugar fresco y seco">
+    </label>
+    <p class="hint">Es el producto que viene en la bolsa. La <b>cantidad</b> (250 g, 500 g…), la
+      <b>clave</b> y el <b>codigo de barras</b> son de cada presentacion: se cargan en
+      <b>Etiquetas → Nuevo producto</b>, y al escribir este nombre se completan solos los
+      ingredientes y la informacion adicional.</p>
+    <em class="err" id="baErr"></em>
+    <div class="modal-actions">
+      <span style="flex:1"></span>
+      <button id="baCancelar" class="btn ghost small">Cancelar</button>
+      <button id="baOk" class="btn primary small">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal de proveedor (bolsas.js) -->
 <div id="provModal" class="modal-bg no-print">
   <div class="modal md">
@@ -660,12 +689,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261028-1938"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261028-1938"></script>
-<script src="google.js?v=20261028-1938"></script>
-<script src="browser-api.js?v=20261028-1938"></script>
-<script src="cloud.js?v=20261028-1938"></script>
-<script src="bolsas.js?v=20261028-1938"></script>
-<script src="app.js?v=20261028-1938"></script>
+<script src="config.js?v=20261028-1954"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-1954"></script>
+<script src="google.js?v=20261028-1954"></script>
+<script src="browser-api.js?v=20261028-1954"></script>
+<script src="cloud.js?v=20261028-1954"></script>
+<script src="bolsas.js?v=20261028-1954"></script>
+<script src="app.js?v=20261028-1954"></script>
 </body>
 </html>

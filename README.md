@@ -151,6 +151,15 @@ la app la agrega sola al conectarse.
 | `Lotes` | lote | lote, codigo, producto, vencimiento, paquetes, bolsas, imagen, archivo, enlace, actualizado, por |
 | `Bolsas` | bolsa de granel | id, ingreso, producto, proveedor, loteProveedor, peso, vencimiento, precio, estado, foto, archivo, enlace, actualizado, por |
 | `Proveedores` | proveedor | nombre, telefono, email, notas, actualizado, por |
+| `Productos` | producto a granel | nombre, ingredientes, infoExtra, actualizado, por |
+
+**Producto a granel y presentación.** Un producto a granel (pestaña `Productos`, lo que viene
+en la bolsa) tiene solo nombre, ingredientes e información adicional. Cada **presentación**
+que sale de él (250 g, 500 g…) es un producto del `Catalogo`, con su cantidad, su clave y su
+código de barras: la cantidad va en la etiqueta, y la bolsa tiene su propio peso. Al dar de
+alta una presentación (*Etiquetas → Nuevo producto*) con el nombre de un producto a granel, se
+completan solos sus ingredientes y su información adicional. La lista de productos de la bolsa
+muestra los productos a granel y los nombres del catálogo.
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
@@ -300,8 +309,9 @@ sugiere los lotes ya registrados.
 **Bolsas de granel** (sección *Bolsas* del menú de arriba). Trazabilidad de lo que se compra
 a granel y se fracciona. Cada bolsa que llega se registra con **producto** (de los nombres del
 catálogo, sin presentación: una bolsa de *Pimienta blanca molida* sirve para los paquetes de
-250 g y de 500 g; si el producto todavía no existe, *Nuevo…* abre el mismo alta de producto
-del catálogo y lo deja elegido), **fecha de ingreso** (hoy, por defecto), **peso** (25 kg por
+250 g y de 500 g; si todavía no existe, *Nuevo…* da de alta el **producto a granel**: solo
+nombre, ingredientes e información adicional, sin cantidad, clave ni código, y lo deja
+elegido), **fecha de ingreso** (hoy, por defecto), **peso** (25 kg por
 defecto; acepta decimales con coma o punto, 25,5 o 25.5),
 **vencimiento**, **precio de compra** (también con coma decimal y punto de miles, 1.250,50), y
 opcionalmente **proveedor**, **lote del proveedor** y

@@ -32,6 +32,15 @@ const bolsaToRow = (b) => ({
   ...(b.foto !== undefined ? { foto: b.foto, archivo: b.archivo, enlace: b.enlace } : {})
 });
 
+const baseFromRow = (r) => ({
+  nombre: String(r.nombre).trim(), ingredientes: r.ingredientes || '', infoExtra: r.infoExtra || ''
+});
+
+const findBase = (nombre) => {
+  const k = normalizar(nombre);
+  return k ? cloud.productos.find((p) => normalizar(p.nombre) === k) || null : null;
+};
+
 const provFromRow = (r) => ({
   nombre: String(r.nombre).trim(), telefono: r.telefono || '', email: r.email || '', notas: r.notas || ''
 });
@@ -88,15 +97,52 @@ function setSeccion(s) {
 
 /* ---------------- Productos ---------------- */
 
-/* Nombres del catalogo, una vez cada uno y sin presentacion: una bolsa de
-   "Pimienta blanca molida" sirve para los paquetes de 250 g y de 500 g. */
+/* Productos que puede tener una bolsa: los productos a granel (pestana
+   Productos: nombre, ingredientes e info, sin cantidad) y los nombres del
+   catalogo, una vez cada uno y sin presentacion. Una bolsa de "Pimienta
+   blanca molida" sirve para los paquetes de 250 g y de 500 g. */
 function productosGranel() {
   const vistos = new Map();
-  cloud.catalog.forEach((c) => {
-    const k = normalizar(c.producto);
-    if (k && !vistos.has(k)) vistos.set(k, c.producto);
+  [...cloud.productos.map((p) => p.nombre), ...cloud.catalog.map((c) => c.producto)].forEach((n) => {
+    const k = normalizar(n);
+    if (k && !vistos.has(k)) vistos.set(k, n);
   });
   return [...vistos.values()].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+/* ---------------- Producto a granel ---------------- */
+
+/* Ventana "Nuevo producto" de Bolsas: nombre, ingredientes e informacion
+   adicional. La cantidad, la clave y el codigo de barras son de cada
+   presentacion y se cargan en Etiquetas (Nuevo producto del catalogo). */
+function openBaseModal() {
+  if (!requireCloud()) return;
+  $('baNombre').value = '';
+  $('baIngr').value = '';
+  $('baInfo').value = '';
+  $('baErr').textContent = '';
+  $('baseModal').classList.add('show');
+  setTimeout(() => $('baNombre').focus(), 30);
+}
+
+const closeBaseModal = () => $('baseModal').classList.remove('show');
+
+async function guardarBase() {
+  const nombre = $('baNombre').value.trim().replace(/\s+/g, ' ');
+  if (!nombre) { $('baErr').textContent = 'Cargá el nombre del producto.'; return; }
+  const existe = productosGranel().find((p) => normalizar(p) === normalizar(nombre));
+  if (existe) { $('baErr').textContent = `Ya existe el producto "${existe}": elegilo de la lista.`; return; }
+  const base = { nombre, ingredientes: $('baIngr').value.trim(), infoExtra: $('baInfo').value.trim() };
+  const ok = await cloudTask('Guardando producto…', async () => {
+    await gUpsert('Productos', 'nombre', base);
+    return true;
+  });
+  if (!ok) return;
+  cloud.productos.push(base);
+  closeBaseModal();
+  fillBolsaProductos(nombre);            // queda elegido en la bolsa
+  $('bProducto').closest('.field').classList.remove('missing');
+  toast(`Producto "${nombre}" guardado`);
 }
 
 function fillBolsaProductos(actual) {
@@ -626,8 +672,15 @@ function bindBolsasEvents() {
   $('bFiltro').addEventListener('change', renderBolsasList);
   $('loteBolsasTodas').addEventListener('change', renderLoteBolsas);
 
-  // Producto que todavia no esta en el catalogo: el mismo alta que en Etiquetas.
-  $('bProdNuevo').addEventListener('click', () => openProdModal('bolsas'));
+  // Producto a granel que todavia no existe: nombre, ingredientes e info.
+  $('bProdNuevo').addEventListener('click', openBaseModal);
+  $('baOk').addEventListener('click', guardarBase);
+  $('baCancelar').addEventListener('click', closeBaseModal);
+  $('baseModal').addEventListener('click', (e) => { if (e.target === $('baseModal')) closeBaseModal(); });
+  $('baseModal').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeBaseModal();
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') guardarBase();
+  });
 
   /* --- proveedores --- */
   $('bProveedor').addEventListener('change', () => { $('bProvEditar').disabled = !$('bProveedor').value; });
