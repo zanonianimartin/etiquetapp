@@ -149,6 +149,7 @@ async function guardarBase() {
     // Queda elegido en el alta de producto, con sus ingredientes e info.
     fillProdProductos(nombre);
     completarDesdeGranel(true);
+    sugerirClave();
   } else {
     fillBolsaProductos(nombre);          // queda elegido en la bolsa
     $('bProducto').closest('.field').classList.remove('missing');

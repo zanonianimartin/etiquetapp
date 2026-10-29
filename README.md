@@ -254,6 +254,13 @@ desactivada no se imprime ninguna de las dos.
 
 **Catálogo de productos** (requiere conexión con Google). Cada producto se da de alta con
 **Nuevo producto…**, que pide una **clave de 5 caracteres** (por ejemplo `sal1k` o `pb250`).
+**La clave se genera sola** al elegir el producto y cargar la cantidad, con la misma regla que
+las claves cargadas a mano: las iniciales de las primeras palabras del nombre (sin contar "de",
+"y", "en"…; con una sola palabra, sus primeras letras) y la cantidad (en gramos el número
+solo, en kilos o litros con la unidad), 5 caracteres en total: *Pimienta blanca molida 250 g*
+→ `pb250`, *Almidón de maíz 1 kg* → `am1kg`. Si ya existe, prueba otras letras del nombre
+hasta encontrar una libre. Escribir otra a mano la reemplaza; vaciar el campo vuelve a la
+automática.
 El código de barras sale de esa clave con la misma cuenta que la función
 `=TEXTO_A_DECIMAL()` de Apps Script de la planilla: cada carácter es un dígito en base 256 y
 el resultado se completa con ceros a la izquierda hasta 13 dígitos (`sal1k` →

@@ -619,6 +619,58 @@ function checkClave(clave) {
   };
 }
 
+/* ---- Clave automatica ----
+   La misma regla que siguen las claves cargadas a mano: letras del nombre y
+   la cantidad, 5 caracteres en total. Letras: las iniciales de las primeras
+   palabras ("Pimienta blanca molida" -> pb), sin contar "de", "y", "en"…; con
+   una sola palabra, sus primeras letras ("Adobo" -> ad). Cantidad: en gramos,
+   mililitros o unidades el numero solo (250); en kilos o litros, con la
+   unidad (1kg, 1lt). Si la cantidad ocupa menos, entran mas letras.
+   Ejemplos: pb250, ap500, am1kg, cr100. Si la clave ya existe se prueban otras
+   letras del nombre; si no queda ninguna libre, devuelve ''. */
+const CLAVE_VACIAS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'e', 'en', 'con', 'sin', 'a', 'al', 'para', 'por']);
+
+function generarClave(producto, cantidad, unidad) {
+  const ascii = (s) => normalizar(s).replace(/[^a-z0-9 ]/g, ' ');
+  const palabras = ascii(producto).split(/\s+/).filter((w) => w && !CLAVE_VACIAS.has(w));
+  const n = String(cantidad || '').trim().replace(',', '.');
+  if (!palabras.length || !/^\d+(\.\d+)?$/.test(n)) return '';
+  const num = n.replace(/\.0+$/, '').replace('.', '');     // 1,5 -> 15: sin punto en la clave
+  const cola = ['kg', 'lt'].includes(unidad) ? num + unidad : num;
+  const largo = CLAVE_LEN - cola.length;
+  if (largo < 1) return '';
+
+  // Letras candidatas, de la mas natural a la menos: iniciales, primeras
+  // letras de la primera palabra, y despues combinaciones con otras letras.
+  const iniciales = palabras.map((w) => w[0]).join('');
+  const letras = palabras.join('');
+  const candidatos = new Set();
+  const agregar = (p) => { if (p.length === largo) candidatos.add(p); };
+  agregar((iniciales + letras.slice(1)).slice(0, largo));
+  agregar(palabras[0].slice(0, largo));
+  agregar((palabras[0][0] + letras.slice(1)).slice(0, largo));
+  for (let i = 1; i < letras.length && candidatos.size < 60; i++) {
+    agregar((letras[0] + letras[i] + letras.slice(i + 1)).slice(0, largo));
+    for (let j = i + 1; j < letras.length && largo >= 3; j++) agregar((letras[0] + letras[i] + letras[j]).slice(0, largo));
+  }
+  for (const p of candidatos) {
+    const clave = p + cola;
+    if (checkClave(clave).ok) return clave;            // 5 caracteres validos y sin usar
+  }
+  return '';
+}
+
+/* En el alta: la clave se completa sola con el producto y la cantidad,
+   mientras no se escriba una a mano. */
+let claveAuto = true;
+
+function sugerirClave() {
+  if (!claveAuto) return;
+  $('pClave').value = generarClave($('pProducto').value, $('pCantidad').value, $('pUnidad').value);
+  paintProdClave();
+  $('pClaveAuto').hidden = !$('pClave').value;
+}
+
 function paintProdClave() {
   const r = checkClave($('pClave').value);
   $('pClaveErr').textContent = r.msg;
@@ -655,8 +707,10 @@ function openProdModal(nombre = '') {
      para createProduct, y el titulo dice de que producto es la presentacion. */
   $('pProductoField').hidden = !!nombre;
   $('pTitulo').textContent = nombre ? `Nueva presentacion de ${nombre}` : 'Nuevo producto';
-  paintProdClave();
   completarDesdeGranel();
+  claveAuto = true;                     // la clave se genera sola hasta que se escriba una
+  sugerirClave();
+  paintProdClave();
   $('prodModal').classList.add('show');
   setTimeout(() => $('pClave').focus(), 30);
 }
@@ -1243,10 +1297,17 @@ function bindCloudEvents() {
 
   /* --- nuevo producto --- */
   $('btnProdNew').addEventListener('click', () => openProdModal());
-  $('pProducto').addEventListener('change', () => completarDesdeGranel(true));
+  $('pProducto').addEventListener('change', () => { completarDesdeGranel(true); sugerirClave(); });
   // Producto a granel que todavia no existe: se crea encima de esta ventana.
   $('pProdBase').addEventListener('click', () => openBaseModal('presentacion'));
-  $('pClave').addEventListener('input', paintProdClave);
+  // La clave se regenera con el producto y la cantidad mientras no se escriba a mano.
+  $('pCantidad').addEventListener('input', sugerirClave);
+  $('pUnidad').addEventListener('change', sugerirClave);
+  $('pClave').addEventListener('input', () => {
+    claveAuto = !$('pClave').value.trim();   // vaciarla vuelve a la automatica
+    $('pClaveAuto').hidden = true;
+    if (claveAuto) sugerirClave(); else paintProdClave();
+  });
   $('pOk').addEventListener('click', createProduct);
   $('pCancel').addEventListener('click', closeProdModal);
   $('prodModal').addEventListener('click', (e) => { if (e.target === $('prodModal')) closeProdModal(); });
