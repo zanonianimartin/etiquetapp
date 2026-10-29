@@ -354,7 +354,8 @@ La lista muestra cada bolsa con su foto, datos, estado y los lotes en los que se
 filtra por estado (por defecto, las sin agotar) y se busca por producto, proveedor, lote del
 proveedor, ID o lote de etiquetas. Tocar una bolsa la abre para editarla. El **estado**
 (*disponible*, *en uso*, *agotada*) se cambia a mano; la única excepción es que una bolsa
-*disponible* pasa sola a *en uso* cuando se registra un lote que la usa. Una bolsa asociada a
+*disponible* pasa sola a *en uso* cuando se usa en un lote, y se puede marcar *agotada* desde
+la etiqueta (*Se agotó*, ver abajo). Una bolsa asociada a
 un lote no se puede eliminar: se marca como agotada.
 
 Debajo de *Buscar producto*, **Bolsas usadas** lista las bolsas sin agotar del mismo producto
@@ -364,6 +365,11 @@ vencimiento** (con varias, el que vence primero). Destildarla la devuelve a *dis
 ningún otro lote la usa. La asociación con el lote se guarda con *Registrar lote* /
 *Actualizar registro*. Así, desde un lote se sabe de qué bolsas salió, y desde una bolsa, en qué
 lotes se usó. Si no hay bolsas del producto, un botón lleva a registrarla en *Bolsas*.
+
+Cada bolsa tildada tiene al lado **Se agotó**: si la bolsa se terminó con este lote, al
+marcarla queda **agotada** en la planilla en el momento, y sigue asociada al lote. Así, de tres
+bolsas usadas se marcan solo las que se terminaron. Desmarcar *Se agotó* la vuelve a *en uso*;
+destildar la bolsa (se tildó por error) la devuelve al estado que tenía.
 
 **Paso a paso.** La pestaña de datos se va mostrando a medida que se completa: primero solo el
 buscador de producto; elegido el producto, las bolsas usadas; tildada una bolsa, los datos de

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261028-2255">
+<html lang="es" data-version="20261028-2319">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261028-2255">
+<link rel="stylesheet" href="styles.css?v=20261028-2319">
 </head>
 <body data-tab="datos">
 
@@ -219,6 +219,8 @@
           <label class="check"><input type="checkbox" id="loteBolsasTodas"> Mostrar bolsas de otros productos</label>
           <p class="hint solo-sin-bolsa">Tildá la bolsa de la que sale el lote: queda <b>en uso</b>
             y la etiqueta toma su vencimiento.</p>
+          <p class="hint">Si alguna bolsa se termino con este lote, tildá <b>Se agotó</b> al lado:
+            queda agotada en el momento.</p>
           <p class="hint" id="loteBolsasAviso" hidden>La asociacion con el lote se guarda al tocar
             <b>Registrar lote</b> / <b>Actualizar registro</b> (en Registro de lotes).</p>
         </div>
@@ -798,13 +800,13 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261028-2255"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261028-2255"></script>
-<script src="google.js?v=20261028-2255"></script>
-<script src="browser-api.js?v=20261028-2255"></script>
-<script src="cloud.js?v=20261028-2255"></script>
-<script src="bolsas.js?v=20261028-2255"></script>
-<script src="lotes.js?v=20261028-2255"></script>
-<script src="app.js?v=20261028-2255"></script>
+<script src="config.js?v=20261028-2319"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-2319"></script>
+<script src="google.js?v=20261028-2319"></script>
+<script src="browser-api.js?v=20261028-2319"></script>
+<script src="cloud.js?v=20261028-2319"></script>
+<script src="bolsas.js?v=20261028-2319"></script>
+<script src="lotes.js?v=20261028-2319"></script>
+<script src="app.js?v=20261028-2319"></script>
 </body>
 </html>

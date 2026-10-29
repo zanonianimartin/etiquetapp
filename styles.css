@@ -784,6 +784,9 @@ body.paso-bolsa .solo-sin-bolsa{display:none}
 .bolsa-pick .hint{margin:6px 0}
 .bolsa-opc{font-size:11.5px; margin:6px 0; align-items:flex-start}
 .bolsa-opc input{margin-top:2px}
+.bolsa-fila{display:flex; align-items:flex-start; gap:8px}
+.bolsa-fila .bolsa-opc{flex:1 1 auto; min-width:0}
+.bolsa-agotada{flex:0 0 auto; font-size:11px; margin:6px 0; color:#ff9c95; white-space:nowrap}
 .modal a{color:var(--accent)}
 
 /* Sin conexion, las secciones de la planilla se ven pero no se usan. */

@@ -550,6 +550,9 @@ function renderBolsasList() {
 /* ---------------- Bolsas usadas en un lote ---------------- */
 
 let loteBolsasSel = new Set();      // ids elegidos para el lote seleccionado
+/* Bolsas marcadas "Se agotó" desde la etiqueta, con el estado que tenian
+   antes: si se destilda la bolsa (se tildo por error), vuelve a ese estado. */
+const agotadasAqui = new Map();
 
 /* Al pasar a otro lote se toman las bolsas que tenia guardadas. */
 function loteBolsasDesde(reg) {
@@ -590,7 +593,8 @@ function renderLoteBolsas() {
     return;
   }
   lista.forEach((b) => {
-    const fila = el('label', 'check bolsa-opc');
+    const fila = el('div', 'bolsa-fila');
+    const opc = el('label', 'check bolsa-opc');
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.value = b.id;
@@ -603,13 +607,41 @@ function renderLoteBolsas() {
       // ningun otro lote la usa (se habia tildado por error).
       const otros = bolsaLotes(b.id).filter((x) => x !== lote);
       if (cb.checked && b.estado === 'disponible') cambiarEstadoBolsa(b, 'en uso');
-      else if (!cb.checked && b.estado === 'en uso' && !otros.length) cambiarEstadoBolsa(b, 'disponible');
+      else if (!cb.checked && agotadasAqui.has(b.id)) {
+        const antes = agotadasAqui.get(b.id);
+        agotadasAqui.delete(b.id);
+        cambiarEstadoBolsa(b, antes === 'en uso' && !otros.length ? 'disponible' : antes);
+      } else if (!cb.checked && b.estado === 'en uso' && !otros.length) cambiarEstadoBolsa(b, 'disponible');
+      else renderLoteBolsas();            // aparece o se va la casilla "Se agotó"
       vencDesdeBolsas();
       paintPrecioLote();                 // lotes.js: el granel sale de las bolsas tildadas
       syncPasos();
     });
-    fila.appendChild(cb);
-    fila.append(`${b.id} · ${b.producto} · vence ${fechaUY(b.vencimiento)} · ${b.estado}`);
+    opc.appendChild(cb);
+    opc.append(`${b.id} · ${b.producto} · vence ${fechaUY(b.vencimiento)} · ${b.estado}`);
+    fila.appendChild(opc);
+    // Una bolsa usada puede terminarse en este lote: se marca agotada ya.
+    if (cb.checked) {
+      const ag = el('label', 'check bolsa-agotada');
+      const ca = document.createElement('input');
+      ca.type = 'checkbox';
+      ca.checked = b.estado === 'agotada';
+      ca.disabled = !lote;
+      ca.addEventListener('change', () => {
+        if (ca.checked) {
+          if (!agotadasAqui.has(b.id)) agotadasAqui.set(b.id, b.estado);
+          cambiarEstadoBolsa(b, 'agotada');
+          toast(`Bolsa ${b.id} marcada como agotada`);
+        } else {
+          const antes = agotadasAqui.get(b.id);
+          agotadasAqui.delete(b.id);
+          cambiarEstadoBolsa(b, antes && antes !== 'agotada' ? antes : 'en uso');
+        }
+      });
+      ag.appendChild(ca);
+      ag.append('Se agotó');
+      fila.appendChild(ag);
+    }
     cont.appendChild(fila);
   });
   syncPasos();
