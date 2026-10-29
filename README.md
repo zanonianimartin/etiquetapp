@@ -160,6 +160,12 @@ código de barras: la cantidad va en la etiqueta, y la bolsa tiene su propio pes
 productos se crean en **Bolsas** (*Nuevo…* junto a la lista de productos); las presentaciones,
 en **Etiquetas**: se busca el producto y se toca *Nueva presentación…*. El alta no vuelve a
 pedir el producto y completa sola sus ingredientes y su información adicional.
+
+**Editar un producto.** En **Bolsas**, *Editar…* (al lado de la lista de productos) abre el
+producto elegido para corregir sus ingredientes y su información adicional (el nombre no se
+cambia). Al guardar se actualizan también **todas sus presentaciones** del catálogo y las
+etiquetas cargadas de ellas. En la etiqueta esos dos campos se pueden cambiar igual, pero
+valen **solo para esa impresión**: no se guardan en la planilla.
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
@@ -300,10 +306,11 @@ el código sale siempre del producto del catálogo (o de *Nueva presentación…
 
 **Los cambios se guardan solos.** Una etiqueta cuyo código está en el catálogo queda
 vinculada a ese producto (el panel del catálogo lo indica). Lo que se cambie en sus datos
-—producto, cantidad, unidad, ingredientes, información adicional o tabla nutricional— se
+—producto, cantidad, unidad o tabla nutricional— se
 guarda en la planilla **al salir del campo** (clic afuera, Tab o Enter; la unidad, al
 elegirla; la tabla, al tocar *Guardar*), y lo ve todo el equipo. Mientras se escribe, el
-panel avisa que hay cambios sin guardar. El lote y el vencimiento no se guardan en el
+panel avisa que hay cambios sin guardar. Los ingredientes y la información adicional valen solo para esa
+impresión (se corrigen en el producto con *Bolsas → Editar…*). El lote y el vencimiento no se guardan en el
 producto, y la clave y el código nunca cambian. Si el producto o la cantidad quedan vacíos,
 no se guarda nada hasta completarlos.
 

@@ -112,23 +112,40 @@ function productosGranel() {
 
 /* ---------------- Producto a granel ---------------- */
 
-/* Ventana "Nuevo producto" de Bolsas: nombre, ingredientes e informacion
-   adicional. Es el unico lugar donde se crean productos. La cantidad, la clave
-   y el codigo de barras son de cada presentacion y se cargan en Etiquetas
-   (buscar el producto -> Nueva presentacion…). */
-function openBaseModal() {
+/* Ventana de producto de Bolsas: nombre, ingredientes e informacion
+   adicional. Es el unico lugar donde se crean y se editan productos. La
+   cantidad, la clave y el codigo de barras son de cada presentacion y se
+   cargan en Etiquetas (buscar el producto -> Nueva presentacion…).
+   Con `nombre` edita ese producto (el nombre no cambia). */
+let baseEditando = null;                 // producto que se edita; null = alta
+
+const presentacionesDe = (nombre) =>
+  cloud.catalog.filter((c) => normalizar(c.producto) === normalizar(nombre));
+
+function openBaseModal(nombre) {
   if (!requireCloud()) return;
-  $('baNombre').value = '';
-  $('baIngr').value = '';
-  $('baInfo').value = '';
+  baseEditando = nombre || null;
+  const base = baseEditando && (findBase(nombre) || presentacionesDe(nombre)[0]);
+  const n = baseEditando ? presentacionesDe(nombre).length : 0;
+  $('baTitulo').textContent = baseEditando ? 'Editar producto' : 'Nuevo producto';
+  $('baNombre').value = baseEditando || '';
+  $('baNombre').readOnly = !!baseEditando;
+  $('baIngr').value = (base && base.ingredientes) || '';
+  $('baInfo').value = (base && base.infoExtra) || '';
+  $('baHintNuevo').hidden = !!baseEditando;
+  $('baHintEditar').hidden = !baseEditando;
+  $('baHintEditar').textContent = n
+    ? `Al guardar se actualiza${n > 1 ? 'n sus ' + n + ' presentaciones' : ' su presentacion'} del catalogo: las etiquetas nuevas salen con estos datos.`
+    : 'Todavia no tiene presentaciones: se usan al crearlas en Etiquetas.';
   $('baErr').textContent = '';
   $('baseModal').classList.add('show');
-  setTimeout(() => $('baNombre').focus(), 30);
+  setTimeout(() => $(baseEditando ? 'baIngr' : 'baNombre').focus(), 30);
 }
 
 const closeBaseModal = () => $('baseModal').classList.remove('show');
 
 async function guardarBase() {
+  if (baseEditando) return guardarEdicionBase();
   const nombre = $('baNombre').value.trim().replace(/\s+/g, ' ');
   if (!nombre) { $('baErr').textContent = 'Cargá el nombre del producto.'; return; }
   const existe = productosGranel().find((p) => normalizar(p) === normalizar(nombre));
@@ -146,6 +163,28 @@ async function guardarBase() {
   toast(`Producto "${nombre}" guardado`);
 }
 
+/* Guarda el producto editado y copia ingredientes e informacion adicional a
+   todas sus presentaciones del catalogo y a las etiquetas cargadas de ellas. */
+async function guardarEdicionBase() {
+  const nombre = (findBase(baseEditando) || {}).nombre || baseEditando;
+  const datos = { ingredientes: $('baIngr').value.trim(), infoExtra: $('baInfo').value.trim() };
+  const pres = presentacionesDe(nombre);
+  const ok = await cloudTask('Guardando producto…', async () => {
+    await gUpsert('Productos', 'nombre', { nombre, ...datos });
+    for (const c of pres) await gUpsert('Catalogo', 'codigo', catToRow({ ...c, ...datos }));
+    return true;
+  });
+  if (!ok) return;
+  const base = findBase(nombre);
+  if (base) Object.assign(base, datos); else cloud.productos.push({ nombre, ...datos });
+  pres.forEach((c) => Object.assign(c, datos));
+  const codigos = new Set(pres.map((c) => c.codigo));
+  state.items.forEach((l) => { if (codigos.has(String(l.codigo || '').trim())) Object.assign(l, datos); });
+  closeBaseModal();
+  refreshCatalogUI(); renderSheets(); fillForm();
+  toast(`Producto "${nombre}" actualizado` + (pres.length ? ` · ${pres.length} presentacion${pres.length > 1 ? 'es' : ''}` : ''));
+}
+
 function fillBolsaProductos(actual) {
   const sel = $('bProducto');
   const lista = productosGranel();
@@ -155,6 +194,7 @@ function fillBolsaProductos(actual) {
   sel.appendChild(new Option(lista.length ? '— elegí un producto —' : '— el catalogo esta vacio —', ''));
   lista.forEach((p) => sel.appendChild(new Option(p, p)));
   sel.value = actual && lista.find((p) => normalizar(p) === normalizar(actual)) || '';
+  $('bProdEditar').disabled = !sel.value;
 }
 
 /* ---------------- Proveedores ---------------- */
@@ -674,7 +714,9 @@ function bindBolsasEvents() {
   $('loteBolsasTodas').addEventListener('change', renderLoteBolsas);
 
   // Producto a granel que todavia no existe: nombre, ingredientes e info.
-  $('bProdNuevo').addEventListener('click', openBaseModal);
+  $('bProdNuevo').addEventListener('click', () => openBaseModal());
+  $('bProdEditar').addEventListener('click', () => { if ($('bProducto').value) openBaseModal($('bProducto').value); });
+  $('bProducto').addEventListener('change', () => { $('bProdEditar').disabled = !$('bProducto').value; });
   $('baOk').addEventListener('click', guardarBase);
   $('baCancelar').addEventListener('click', closeBaseModal);
   $('baseModal').addEventListener('click', (e) => { if (e.target === $('baseModal')) closeBaseModal(); });

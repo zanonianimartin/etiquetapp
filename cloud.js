@@ -505,12 +505,14 @@ function findCatalog(text) {
 /* ---------------- Edicion del producto desde la etiqueta ---------------- */
 
 /* Una etiqueta cuyo codigo esta en el catalogo queda vinculada a ese
-   producto: lo que se cambie en sus datos (todo menos lote y vencimiento)
+   producto: lo que se cambie en su nombre, cantidad y tabla nutricional
    se guarda solo en la planilla al salir del campo (evento `change`).
    Mientras se escribe solo se guarda una copia de la etiqueta: al salir del
    campo la seleccion pudo haber pasado a otra (el clic que saca el foco
    puede ser sobre otra etiqueta), y lo que va al catalogo es lo editado. */
-const PRODUCT_FIELDS = ['producto', 'cantidad', 'unidad', 'ingredientes', 'infoExtra'];
+/* Ingredientes e informacion adicional no estan: son del producto a granel y
+   se cambian en Bolsas (Editar…); en la etiqueta valen solo para esa impresion. */
+const PRODUCT_FIELDS = ['producto', 'cantidad', 'unidad'];
 let syncTimer = null;            // reintento si la planilla esta ocupada
 let syncPending = null;          // copia de la etiqueta editada, esperando guardarse
 let linkMsgTimer = null;
@@ -545,7 +547,7 @@ function paintCatLink(estado, detalle) {
     p.textContent = 'No se pudo actualizar el producto: ' + detalle;
     p.classList.add('bad');
   } else if (c) {
-    p.textContent = `Etiqueta vinculada a "${c.producto}": los cambios en sus datos se guardan en el catalogo al salir de cada campo (menos lote y vencimiento).`;
+    p.textContent = `Etiqueta vinculada a "${c.producto}": los cambios en su nombre, cantidad y tabla nutricional se guardan en el catalogo al salir de cada campo. Lote, vencimiento, ingredientes e informacion adicional valen solo para esta impresion.`;
   } else {
     p.textContent = '';
   }
@@ -556,9 +558,10 @@ function paintCatLink(estado, detalle) {
 function catalogEdited(guardar = false) {
   if (!cloudReady()) return;
   const l = currentLabel();
-  if (linkedProduct(l)) {
+  const c = linkedProduct(l);
+  if (c) {
     syncPending = cloneLabel(l);
-    if (!guardar) paintCatLink('pending');
+    if (!guardar) paintCatLink(productDiffers(l, c) ? 'pending' : undefined);
   }
   if (guardar && syncPending) {
     clearTimeout(syncTimer);
@@ -578,7 +581,6 @@ async function syncProduct() {
   syncPending = null;
   const cambios = {
     producto: l.producto, cantidad: l.cantidad, unidad: l.unidad,
-    ingredientes: l.ingredientes || '', infoExtra: l.infoExtra || '',
     nutri: cloneNutri(l.nutri)
   };
   cloud.busy = true;
@@ -814,8 +816,9 @@ async function saveToCatalog() {
   const entry = {
     codigo, tipo: state.cfg.barcodeType,
     producto: l.producto, cantidad: l.cantidad, unidad: l.unidad,
-    ingredientes: l.ingredientes || '', infoExtra: l.infoExtra || '',
-    nutri: cloneNutri(l.nutri)
+    nutri: cloneNutri(l.nutri),
+    // Ingredientes e info son del producto: la etiqueta solo los pone si es nuevo.
+    ...(prev ? {} : { ingredientes: l.ingredientes || '', infoExtra: l.infoExtra || '' })
   };
   const ok = await cloudTask('Guardando en el catalogo…', async () => {
     await gUpsert('Catalogo', 'codigo', catToRow(entry));

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261028-2120">
+<html lang="es" data-version="20261028-2146">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261028-2120">
+<link rel="stylesheet" href="styles.css?v=20261028-2146">
 </head>
 <body data-tab="datos">
 
@@ -282,7 +282,7 @@
         <textarea id="fIngredientes" rows="3" maxlength="400" spellcheck="false"
                   placeholder="Lentejones, sal, antihumectante INS 551"></textarea>
       </label>
-      <p class="hint">Se imprime en la columna derecha del diseno
+      <p class="hint">Si lo cambiás acá vale solo para estas etiquetas; para cambiarlo en el producto, <b>Bolsas → Editar…</b>. Se imprime en la columna derecha del diseno
         <b>Dos columnas</b>, al lado de la tabla nutricional.</p>
 
       <label class="field">
@@ -300,7 +300,7 @@
         <input type="text" id="fInfoExtra" maxlength="120"
                placeholder="Industria Uruguaya - Conservar en lugar fresco y seco">
       </label>
-      <p class="hint">Se imprime justo <b>encima del codigo de barras</b>, en todos los disenos.</p>
+      <p class="hint">Se imprime justo <b>encima del codigo de barras</b>, en todos los disenos. Si la cambiás acá vale solo para estas etiquetas; para cambiarla en el producto, <b>Bolsas → Editar…</b>.</p>
 
       <button id="btnNutri" class="btn ghost small wide">
         Tabla nutricional… <span id="nutriBadge" class="badge">opcional</span>
@@ -364,6 +364,7 @@
           <!-- Nuevo…: el mismo alta de producto del catalogo (clave de 5 caracteres). -->
           <div class="prov-row">
             <select id="bProducto" aria-label="Producto"></select>
+            <button id="bProdEditar" class="btn ghost small" type="button" disabled>Editar…</button>
             <button id="bProdNuevo" class="btn ghost small" type="button">Nuevo…</button>
           </div>
         </div>
@@ -540,7 +541,7 @@
 <!-- Modal de producto a granel (bolsas.js): sin cantidad, clave ni codigo. -->
 <div id="baseModal" class="modal-bg no-print">
   <div class="modal md">
-    <h4>Nuevo producto</h4>
+    <h4 id="baTitulo">Nuevo producto</h4>
     <label class="field req">
       <span>Nombre del producto</span>
       <input type="text" id="baNombre" maxlength="80" placeholder="Coco rayado">
@@ -553,7 +554,8 @@
       <span>Informacion adicional <span class="badge">opcional</span></span>
       <input type="text" id="baInfo" maxlength="120" placeholder="Industria Uruguaya - Conservar en lugar fresco y seco">
     </label>
-    <p class="hint">Es el producto que viene en la bolsa. La <b>cantidad</b> (250 g, 500 g…), la
+    <p class="hint" id="baHintEditar" hidden></p>
+    <p class="hint" id="baHintNuevo">Es el producto que viene en la bolsa. La <b>cantidad</b> (250 g, 500 g…), la
       <b>clave</b> y el <b>codigo de barras</b> son de cada presentacion: en <b>Etiquetas</b>,
       buscá este producto y tocá <b>Nueva presentacion…</b>; los ingredientes y la informacion
       adicional se copian solos.</p>
@@ -697,12 +699,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261028-2120"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261028-2120"></script>
-<script src="google.js?v=20261028-2120"></script>
-<script src="browser-api.js?v=20261028-2120"></script>
-<script src="cloud.js?v=20261028-2120"></script>
-<script src="bolsas.js?v=20261028-2120"></script>
-<script src="app.js?v=20261028-2120"></script>
+<script src="config.js?v=20261028-2146"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-2146"></script>
+<script src="google.js?v=20261028-2146"></script>
+<script src="browser-api.js?v=20261028-2146"></script>
+<script src="cloud.js?v=20261028-2146"></script>
+<script src="bolsas.js?v=20261028-2146"></script>
+<script src="app.js?v=20261028-2146"></script>
 </body>
 </html>

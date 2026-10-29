@@ -1172,8 +1172,8 @@ function bindEvents() {
     refreshLoteUI();
     /* Los datos del producto se copian al catalogo (cloud.js): mientras se
        escribe solo se anota el cambio; el select de unidad no tiene
-       "mientras", su `change` ya es la eleccion final y se guarda. Lote y
-       vencimiento no van al producto: de eso se encarga catalogEdited. */
+       "mientras", su `change` ya es la eleccion final y se guarda. Lote,
+       vencimiento, ingredientes e info no van al producto: de eso se encarga catalogEdited. */
     catalogEdited(e.type === 'change');
     clearTimeout(editTimer);
     editTimer = setTimeout(renderSheets, 90);
