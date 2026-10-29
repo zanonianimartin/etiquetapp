@@ -73,7 +73,9 @@ function calcPrecio(pres, ids, valores) {
   return { ok: true, granel, bolsa: cara.id, varias: bolsas.length > 1, kg, porKg, costo, precio: costo / (1 - valores.ganancia / 100) };
 }
 
-function pintarPrecio(box, campos, pres, ids) {
+/* Ganancia neta = precio sugerido - costo de produccion: por paquete y, con
+   la cantidad de paquetes, la del lote entero. */
+function pintarPrecio(box, campos, pres, ids, paquetes) {
   box.innerHTML = '';
   const { valores, error } = leerPrecio(campos);
   const r = error ? { ok: false, msg: error } : calcPrecio(pres, ids, valores);
@@ -90,6 +92,11 @@ function pintarPrecio(box, campos, pres, ids) {
   linea('Agregado', valores.agregado);
   linea('Costo por paquete', r.costo, 'total');
   linea(`Precio sugerido (margen ${String(valores.ganancia).replace('.', ',')} %)`, r.precio, 'final');
+  // Con precio y costo en centavos, como se guardan: da lo mismo que la seccion Lotes.
+  const neta = Number(redondo(r.precio)) - Number(redondo(r.costo));
+  linea('Ganancia neta por paquete', neta, 'neta');
+  const n = Number(paquetes) || 0;
+  if (n > 0) linea(`Ganancia neta del lote (${n} paquetes)`, neta * n, 'neta');
 }
 
 /* Columnas del precio para la fila del lote, o null si algun campo no sirve.
@@ -133,7 +140,7 @@ function paintPrecioLote() {
   const lote = currentLote();
   Object.values(PRECIO_CAMPOS).forEach((id) => { $(id).disabled = !lote; });
   if (!lote) { box.innerHTML = ''; return; }
-  pintarPrecio(box, PRECIO_CAMPOS, currentLabel(), [...loteBolsasSel]);
+  pintarPrecio(box, PRECIO_CAMPOS, currentLabel(), [...loteBolsasSel], lotePaquetesValor());
 }
 
 /* Al pasar a otro lote: los valores guardados del lote o, si es nuevo, los
@@ -199,7 +206,7 @@ function renderLmBolsas() {
 }
 
 function paintLmPrecio() {
-  if (loteModal) pintarPrecio($('lmCalc'), PRECIO_MODAL, presentacionLote(loteModal), [...lmSel]);
+  if (loteModal) pintarPrecio($('lmCalc'), PRECIO_MODAL, presentacionLote(loteModal), [...lmSel], loteModal.paquetes);
 }
 
 async function guardarLoteModal() {
@@ -294,6 +301,11 @@ function renderLotesList() {
     if (String(l.precio ?? '') !== '') {
       info.appendChild(el('div', 'lote-precio', `Precio sugerido ${pesos(l.precio)}` +
         (String(l.costo ?? '') !== '' ? ` · costo ${pesos(l.costo)}` : '')));
+      if (String(l.costo ?? '') !== '') {
+        const neta = Number(l.precio) - Number(l.costo);
+        const n = Number(l.paquetes) || 0;
+        info.appendChild(el('div', 'lote-precio', `Ganancia neta ${pesos(neta)} por paquete` + (n > 0 ? ` · ${pesos(neta * n)} el lote` : '')));
+      }
     }
     const bolsas = parseBolsas(l.bolsas);
     const fila = el('div', 'bolsa-lotes', bolsas.length ? 'Bolsas: ' : 'Sin bolsas registradas');

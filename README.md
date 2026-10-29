@@ -422,6 +422,8 @@ calcula:
 - **Costo** = granel + empaque + etiqueta + agregado.
 - **Precio sugerido** = costo ÷ (1 − ganancia): la ganancia es **margen sobre la venta**
   (con 30 %, de cada $ 100 del precio $ 30 son ganancia).
+- **Ganancia neta** = precio sugerido − costo: por paquete y, con la cantidad de paquetes,
+  la del lote entero (se calcula con precio y costo en centavos, como se guardan).
 
 Se guarda en la pestaña Lotes al registrar o actualizar el lote (los cuatro valores, el
 granel, el costo y el precio), así queda el precio de ese momento aunque después cambien los

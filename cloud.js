@@ -1314,6 +1314,7 @@ function bindCloudEvents() {
     const n = lotePaquetesValor();
     if (n !== null) paquetesAEtiquetas(n);
     else refreshPrintState();            // se borro el numero: deja de poder imprimirse
+    paintPrecioLote();                   // lotes.js: ganancia neta del lote
   });
   $('loteQty').addEventListener('keydown', (e) => { if (e.key === 'Enter') registerLote(); });
   $('btnLoteImg').addEventListener('click', attachLoteImage);
