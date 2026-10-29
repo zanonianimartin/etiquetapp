@@ -434,7 +434,12 @@ nombre del lote, L-DDMMAA-clave), producto y presentación, cantidad de paquetes
 bolsas usadas, imagen y quién lo registró. Se busca por lote, producto, código o bolsa y se
 filtra por período (7, 30 o 90 días); arriba se suman los lotes y paquetes de lo que se ve.
 Tocar una bolsa la abre en **Bolsas**; tocar la imagen la abre en tamaño real. Es solo para
-consultar: los lotes se registran y se corrigen en *Etiquetas → Registro de lotes*.
+**Precio…** (o **Modificar precio…**, si ya tiene) abre una ventana para completar o cambiar el
+precio sugerido de **cualquier lote**, también de los registrados antes de que existiera el
+precio: los cuatro valores y las bolsas usadas (las del producto, también las agotadas), con
+el cálculo a la vista. Si el lote no tenía precio, arranca con los valores del último lote de
+la misma presentación. Al guardar se actualiza el lote en la planilla; el estado de las bolsas
+no cambia. El resto del lote se registra y se corrige en *Etiquetas → Registro de lotes*.
 
 **Salida.** *Imprimir* abre el diálogo de impresión del navegador. *Exportar PDF* abre el
 mismo diálogo: hay que elegir **Guardar como PDF** como destino. En ambos casos conviene

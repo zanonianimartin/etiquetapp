@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261028-2230">
+<html lang="es" data-version="20261028-2240">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261028-2230">
+<link rel="stylesheet" href="styles.css?v=20261028-2240">
 </head>
 <body data-tab="datos">
 
@@ -627,6 +627,46 @@
   </div>
 </div>
 
+<!-- Modal de precio de un lote (lotes.js), desde la seccion Lotes. -->
+<div id="loteModal" class="modal-bg no-print">
+  <div class="modal md">
+    <h4 id="lmTitulo">Precio del lote</h4>
+    <p class="hint" id="lmInfo"></p>
+    <div class="row2">
+      <label class="field">
+        <span>Empaque ($)</span>
+        <input type="text" id="lmEmpaque" inputmode="decimal" placeholder="0" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Etiqueta ($)</span>
+        <input type="text" id="lmEtiqueta" inputmode="decimal" placeholder="0" autocomplete="off">
+      </label>
+    </div>
+    <div class="row2">
+      <label class="field">
+        <span>Agregado ($)</span>
+        <input type="text" id="lmAgregado" inputmode="decimal" placeholder="0" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Ganancia (%)</span>
+        <input type="text" id="lmGanancia" inputmode="decimal" placeholder="30" autocomplete="off">
+      </label>
+    </div>
+    <p class="hint" id="lmOrigen"></p>
+    <span class="field-tit">Bolsas usadas en el lote</span>
+    <div id="lmBolsas" class="bolsa-pick"></div>
+    <div class="precio-calc" id="lmCalc"></div>
+    <p class="hint">Por paquete. El granel sale de la bolsa tildada <b>mas cara</b> por kilo; la
+      ganancia es <b>margen sobre la venta</b>. Al guardar se actualiza el lote en la planilla.</p>
+    <em class="err" id="lmErr"></em>
+    <div class="modal-actions">
+      <span style="flex:1"></span>
+      <button id="lmCancel" class="btn ghost small">Cancelar</button>
+      <button id="lmOk" class="btn primary small">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal de proveedor (bolsas.js) -->
 <div id="provModal" class="modal-bg no-print">
   <div class="modal md">
@@ -758,13 +798,13 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261028-2230"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261028-2230"></script>
-<script src="google.js?v=20261028-2230"></script>
-<script src="browser-api.js?v=20261028-2230"></script>
-<script src="cloud.js?v=20261028-2230"></script>
-<script src="bolsas.js?v=20261028-2230"></script>
-<script src="lotes.js?v=20261028-2230"></script>
-<script src="app.js?v=20261028-2230"></script>
+<script src="config.js?v=20261028-2240"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-2240"></script>
+<script src="google.js?v=20261028-2240"></script>
+<script src="browser-api.js?v=20261028-2240"></script>
+<script src="cloud.js?v=20261028-2240"></script>
+<script src="bolsas.js?v=20261028-2240"></script>
+<script src="lotes.js?v=20261028-2240"></script>
+<script src="app.js?v=20261028-2240"></script>
 </body>
 </html>
