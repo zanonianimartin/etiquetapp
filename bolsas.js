@@ -605,6 +605,7 @@ function renderLoteBolsas() {
       if (cb.checked && b.estado === 'disponible') cambiarEstadoBolsa(b, 'en uso');
       else if (!cb.checked && b.estado === 'en uso' && !otros.length) cambiarEstadoBolsa(b, 'disponible');
       vencDesdeBolsas();
+      paintPrecioLote();                 // lotes.js: el granel sale de las bolsas tildadas
       syncPasos();
     });
     fila.appendChild(cb);

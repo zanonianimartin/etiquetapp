@@ -413,6 +413,22 @@ lo que la imagen necesita, sin márgenes muertos, y nunca se sale de la etiqueta
 Valida largo y dígito verificador, y cuando está mal indica cuál debería ser. Si se cargan
 12 dígitos en un EAN-13, el dígito verificador se calcula solo.
 
+**Precio sugerido de venta.** En *Registro de lotes* se cargan, para cada lote y por paquete,
+el **empaque**, la **etiqueta** y un **agregado** (en pesos) y la **ganancia** (%). La app
+calcula:
+
+- **Granel** = precio de la bolsa ÷ peso de la bolsa × peso del paquete. Si el lote usa
+  varias bolsas, se toma la **más cara por kilo**.
+- **Costo** = granel + empaque + etiqueta + agregado.
+- **Precio sugerido** = costo ÷ (1 − ganancia): la ganancia es **margen sobre la venta**
+  (con 30 %, de cada $ 100 del precio $ 30 son ganancia).
+
+Se guarda en la pestaña Lotes al registrar o actualizar el lote (los cuatro valores, el
+granel, el costo y el precio), así queda el precio de ese momento aunque después cambien los
+costos. Un lote nuevo arranca con los valores del último lote de la misma presentación. Sin IVA
+y sin redondeo. Si falta el precio o el peso de una bolsa, o la presentación no está en
+gramos o kilos, se avisa en lugar de calcular.
+
 **Sección Lotes.** Lista de todos los lotes registrados, el más nuevo primero: fecha (la del
 nombre del lote, L-DDMMAA-clave), producto y presentación, cantidad de paquetes, vencimiento,
 bolsas usadas, imagen y quién lo registró. Se busca por lote, producto, código o bolsa y se

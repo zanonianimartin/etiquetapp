@@ -83,6 +83,8 @@ const catToRow = (c) => ({ ...c, nutri: JSON.stringify(cloneNutri(c.nutri)) });
 const loteFromRow = (r) => ({
   lote: String(r.lote).trim(), codigo: r.codigo || '', producto: r.producto || '',
   vencimiento: r.vencimiento || '', paquetes: r.paquetes || '', bolsas: r.bolsas || '',
+  empaque: r.empaque ?? '', etiqueta: r.etiqueta ?? '', agregado: r.agregado ?? '', ganancia: r.ganancia ?? '',
+  costoGranel: r.costoGranel ?? '', costo: r.costo ?? '', precio: r.precio ?? '',
   imagen: r.imagen || '', archivo: r.archivo || '',
   enlace: r.enlace || '', actualizado: r.actualizado || '', por: r.por || ''
 });
@@ -925,6 +927,7 @@ async function paintLote() {
   if (lote !== loteQtyDe) {
     loteQtyDe = lote;
     loteBolsasDesde(reg);                 // bolsas.js: las bolsas que ya tenia el lote
+    precioLoteDesde(reg);                 // lotes.js: empaque, etiqueta, agregado y ganancia
     $('loteQty').value = reg && reg.paquetes ? reg.paquetes : '';
     $('loteQty').closest('.field').classList.remove('missing');
     // Un lote ya registrado trae sus paquetes: se imprimen esas etiquetas.
@@ -942,9 +945,11 @@ async function paintLote() {
       (cuando ? ` el ${cuando}` : '') + (reg.por ? ` por ${reg.por}` : '') +
       (reg.paquetes ? ` · ${reg.paquetes} paquetes` : ' · sin cantidad de paquetes') +
       (reg.bolsas ? ` · bolsas ${reg.bolsas}` : '') +
+      (String(reg.precio ?? '') !== '' ? ` · precio sugerido ${pesos(reg.precio)}` : '') +
       (reg.imagen ? ' · con imagen' : ' · sin imagen');
   }
   renderLoteBolsas();
+  paintPrecioLote();                     // lotes.js
 
   $('btnLoteSave').textContent = reg ? 'Actualizar registro' : 'Registrar lote';
   $('btnLoteSave').disabled = !lote;
@@ -983,7 +988,9 @@ async function writeLote(extra = {}) {
   const row = {
     lote: currentLote(), codigo: l.codigo || '', producto: l.producto || '',
     vencimiento: l.venc || '', ...(paquetes !== null ? { paquetes: String(paquetes) } : {}),
-    bolsas: loteBolsasTexto(), ...extra   // bolsas.js
+    bolsas: loteBolsasTexto(),            // bolsas.js
+    ...(precioLoteRow() || {}),           // lotes.js: si algun valor no sirve, queda lo guardado
+    ...extra
   };
   await gUpsert('Lotes', 'lote', row);
   const prev = findLote(row.lote);
@@ -996,6 +1003,7 @@ async function registerLote() {
   if (!requireCloud()) return;
   if (!currentLote()) return toast('Cargá el lote de la etiqueta.', true);
   if (!pedirPaquetes()) return;
+  if (!precioLoteRow()) return toast(leerPrecioLote().error, true);
   const nuevo = !findLote(currentLote());
   const ok = await cloudTask('Registrando lote…', async () => {
     await writeLote();

@@ -29,9 +29,13 @@ const TABS = {
   /* `paquetes`: cuantos paquetes salieron del lote (obligatorio al
      registrarlo). `bolsas`: ids de las bolsas de granel que se usaron,
      separados por coma ("B-0001, B-0003"). `imagen` es el id del archivo en
-     Drive y `enlace` su link para abrirlo desde la planilla. */
+     Drive y `enlace` su link para abrirlo desde la planilla. Precio sugerido,
+     por paquete y en pesos: `empaque`, `etiqueta` y `agregado` se cargan en
+     el lote, `ganancia` es el % de margen sobre la venta, `costoGranel` el
+     granel de la bolsa mas cara, `costo` la suma y `precio` = costo / (1 - ganancia). */
   Lotes:      ['lote', 'codigo', 'producto', 'vencimiento', 'paquetes', 'bolsas', 'imagen', 'archivo', 'enlace',
-               'actualizado', 'por'],
+               'actualizado', 'por',
+               'empaque', 'etiqueta', 'agregado', 'ganancia', 'costoGranel', 'costo', 'precio'],
   /* Bolsas de granel (25 kg) que llegan y se fraccionan. `id` B-0001,
      correlativo. `ingreso` y `vencimiento` en formato AAAA-MM-DD. `peso` en
      kg y `precio` (de compra, total de la bolsa) como numeros con punto
