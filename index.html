@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261028-2108">
+<html lang="es" data-version="20261028-2120">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261028-2108">
+<link rel="stylesheet" href="styles.css?v=20261028-2120">
 </head>
 <body data-tab="datos">
 
@@ -191,7 +191,6 @@
       <h3>Catalogo de productos <span id="catCount" class="badge">—</span></h3>
       <p class="hint cloud-msg">Conectate con Google para usar el catalogo compartido.</p>
       <div class="cloud-body">
-        <button id="btnProdNew" class="btn primary small wide">Nuevo producto…</button>
         <!-- Lista de resultados propia (no <datalist>): el datalist casi no
              funciona en celulares. La arma renderCatResults en cloud.js. -->
         <div class="field cat-search">
@@ -201,7 +200,8 @@
                  aria-expanded="false" aria-controls="catResults" aria-autocomplete="list">
           <div class="cat-results" id="catResults" role="listbox" hidden></div>
         </div>
-        <p class="hint" id="pasoInicio">Elegí el producto para empezar.</p>
+        <p class="hint" id="pasoInicio">Elegí el producto para empezar. Los productos se crean
+          en la seccion <b>Bolsas</b> (Nuevo…); sus presentaciones, aca, al elegirlo.</p>
         <!-- Paso 2: la presentacion (variante de cantidad) del producto elegido
              (renderVariantes en cloud.js). -->
         <div class="field" id="catVariantes" hidden>
@@ -292,8 +292,8 @@
                title="El codigo de barras se completa al elegir un producto del catalogo">
         <em class="err" id="codigoErr"></em>
       </label>
-      <p class="hint">Se completa al elegir un producto del <b>catalogo</b> (o al crear uno
-        con <b>Nuevo producto</b>). No se edita a mano.</p>
+      <p class="hint">Se completa al elegir la presentacion del producto (o al crearla con
+        <b>Nueva presentacion…</b>). No se edita a mano.</p>
 
       <label class="field">
         <span>Informacion adicional <span class="badge">opcional</span></span>
@@ -495,9 +495,9 @@
 <!-- Modal de alta de producto -->
 <div id="prodModal" class="modal-bg no-print">
   <div class="modal md">
-    <!-- El titulo cambia a "Nueva presentacion de …" cuando el producto ya
-         viene elegido del buscador (openProdModal en cloud.js). -->
-    <h4 id="pTitulo">Nuevo producto</h4>
+    <!-- Se abre con Nueva presentacion… (paso 2 del buscador): el producto ya
+         viene elegido y va en el titulo (openProdModal en cloud.js). -->
+    <h4 id="pTitulo">Nueva presentacion</h4>
     <label class="field req">
       <span>Clave (5 caracteres)</span>
       <input type="text" id="pClave" maxlength="5" spellcheck="false" autocomplete="off" placeholder="Se genera sola">
@@ -508,16 +508,6 @@
     <div class="prod-bc" id="pBc"></div>
     <p class="hint" id="pCodigo"></p>
 
-    <!-- Los productos de la seccion Bolsas (fillProdProductos en cloud.js);
-         Nuevo… da de alta uno a granel encima de esta ventana. Se oculta si
-         el producto ya viene elegido (Nueva presentacion…). -->
-    <div class="field req" id="pProductoField">
-      <span>Producto</span>
-      <div class="prov-row">
-        <select id="pProducto" aria-label="Producto"></select>
-        <button id="pProdBase" class="btn ghost small" type="button">Nuevo…</button>
-      </div>
-    </div>
     <div class="row3">
       <label class="field req">
         <span>Cantidad</span>
@@ -564,9 +554,9 @@
       <input type="text" id="baInfo" maxlength="120" placeholder="Industria Uruguaya - Conservar en lugar fresco y seco">
     </label>
     <p class="hint">Es el producto que viene en la bolsa. La <b>cantidad</b> (250 g, 500 g…), la
-      <b>clave</b> y el <b>codigo de barras</b> son de cada presentacion: se cargan en
-      <b>Etiquetas → Nuevo producto</b>, y al escribir este nombre se completan solos los
-      ingredientes y la informacion adicional.</p>
+      <b>clave</b> y el <b>codigo de barras</b> son de cada presentacion: en <b>Etiquetas</b>,
+      buscá este producto y tocá <b>Nueva presentacion…</b>; los ingredientes y la informacion
+      adicional se copian solos.</p>
     <em class="err" id="baErr"></em>
     <div class="modal-actions">
       <span style="flex:1"></span>
@@ -707,12 +697,12 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261028-2108"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261028-2108"></script>
-<script src="google.js?v=20261028-2108"></script>
-<script src="browser-api.js?v=20261028-2108"></script>
-<script src="cloud.js?v=20261028-2108"></script>
-<script src="bolsas.js?v=20261028-2108"></script>
-<script src="app.js?v=20261028-2108"></script>
+<script src="config.js?v=20261028-2120"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-2120"></script>
+<script src="google.js?v=20261028-2120"></script>
+<script src="browser-api.js?v=20261028-2120"></script>
+<script src="cloud.js?v=20261028-2120"></script>
+<script src="bolsas.js?v=20261028-2120"></script>
+<script src="app.js?v=20261028-2120"></script>
 </body>
 </html>

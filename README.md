@@ -156,11 +156,10 @@ la app la agrega sola al conectarse.
 **Producto a granel y presentación.** Un producto a granel (pestaña `Productos`, lo que viene
 en la bolsa) tiene solo nombre, ingredientes e información adicional. Cada **presentación**
 que sale de él (250 g, 500 g…) es un producto del `Catalogo`, con su cantidad, su clave y su
-código de barras: la cantidad va en la etiqueta, y la bolsa tiene su propio peso. Al dar de
-alta una presentación (*Etiquetas → Nuevo producto*), el producto se **elige de la lista de
-productos de Bolsas** (los a granel más los nombres del catálogo) y se completan solos sus
-ingredientes y su información adicional; si todavía no existe, *Nuevo…* lo crea ahí mismo.
-Cambiar de producto en la lista reemplaza esos datos, para no mezclar los de dos productos.
+código de barras: la cantidad va en la etiqueta, y la bolsa tiene su propio peso. Los
+productos se crean en **Bolsas** (*Nuevo…* junto a la lista de productos); las presentaciones,
+en **Etiquetas**: se busca el producto y se toca *Nueva presentación…*. El alta no vuelve a
+pedir el producto y completa sola sus ingredientes y su información adicional.
 | `Usuarios` | cuenta habilitada | email, nombre, rol, activo, actualizado, por |
 | `Ajustes` | valor compartido | clave, valor, actualizado, por |
 
@@ -252,9 +251,9 @@ energético y/o los nutrientes que correspondan a cada producto. Si la tabla est
 desactivada no se imprime ninguna de las dos.
 
 
-**Catálogo de productos** (requiere conexión con Google). Cada producto se da de alta con
-**Nuevo producto…**, que pide una **clave de 5 caracteres** (por ejemplo `sal1k` o `pb250`).
-**La clave se genera sola** al elegir el producto y cargar la cantidad, con la misma regla que
+**Catálogo de productos** (requiere conexión con Google). Cada presentación se da de alta con
+**Nueva presentación…** (después de buscar el producto), que pide una **clave de 5 caracteres** (por ejemplo `sal1k` o `pb250`).
+**La clave se genera sola** al cargar la cantidad, con la misma regla que
 las claves cargadas a mano: las iniciales de las primeras palabras del nombre (sin contar "de",
 "y", "en"…; con una sola palabra, sus primeras letras) y la cantidad (en gramos el número
 solo, en kilos o litros con la unidad), 5 caracteres en total: *Pimienta blanca molida 250 g*
@@ -297,7 +296,7 @@ no funciona): se abre al tocar el campo y se filtra mientras se escribe, sin dis
 mayúsculas ni acentos ("pimenton" encuentra "Pimentón"), por nombre, presentación, código o
 clave. Cada resultado muestra el nombre, la cantidad y unidad y el código; la clave no se
 muestra. Se elige tocándolo, o con las flechas y Enter. El campo *Código de barras* de la etiqueta es de **solo lectura**:
-el código sale siempre del producto del catálogo (o de *Nuevo producto*).
+el código sale siempre del producto del catálogo (o de *Nueva presentación…*).
 
 **Los cambios se guardan solos.** Una etiqueta cuyo código está en el catálogo queda
 vinculada a ese producto (el panel del catálogo lo indica). Lo que se cambie en sus datos

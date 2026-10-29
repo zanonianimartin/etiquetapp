@@ -666,7 +666,7 @@ let claveAuto = true;
 
 function sugerirClave() {
   if (!claveAuto) return;
-  $('pClave').value = generarClave($('pProducto').value, $('pCantidad').value, $('pUnidad').value);
+  $('pClave').value = generarClave(prodNombre, $('pCantidad').value, $('pUnidad').value);
   paintProdClave();
   $('pClaveAuto').hidden = !$('pClave').value;
 }
@@ -683,64 +683,49 @@ function paintProdClave() {
   $('pCodigo').textContent = r.ok ? `Codigo ${r.codigo} · CODE128` + (r.aviso ? ` · ${r.aviso}` : '') : '';
 }
 
-/* Alta de una presentacion (clave, cantidad, codigo de barras). Arranca con
-   los datos de la etiqueta seleccionada: lo habitual es armar la etiqueta,
-   revisarla en la vista previa y despues darla de alta. Con `nombre` (Nueva
-   presentacion… del paso 2) arranca con ese producto y la cantidad vacia:
-   es otra presentacion del mismo producto. */
-function openProdModal(nombre = '') {
+/* Alta de una presentacion (clave, cantidad, codigo de barras) del producto
+   elegido en el buscador: se abre con Nueva presentacion… (paso 2), asi que
+   el producto ya viene dado y va en el titulo. Los productos se crean en la
+   seccion Bolsas. */
+let prodNombre = '';                    // producto de la presentacion que se da de alta
+let prodNutri = null;                   // tabla nutricional copiada de otra presentacion
+
+function openProdModal(nombre) {
   if (!requireCloud()) return;
-  const l = nombre ? { ...emptyLabel(), producto: nombre } : currentLabel();
+  if (!String(nombre || '').trim()) return toast('Elegí primero el producto en el buscador.', true);
+  prodNombre = nombre;
+  $('pTitulo').textContent = `Nueva presentacion de ${nombre}`;
   $('pClave').value = '';
-  fillProdProductos(l.producto || '');
-  $('pCantidad').value = l.cantidad || '';
+  $('pCantidad').value = '';
   $('pUnidad').innerHTML = $('fUnidad').innerHTML;
-  $('pUnidad').value = l.unidad || 'gr';
-  $('pIngredientes').value = l.ingredientes || '';
-  $('pInfoExtra').value = l.infoExtra || '';
-  const filas = nutriVisible(l) ? nutriRows(l.nutri).length : 0;
-  $('pNutri').textContent = filas
-    ? `La tabla nutricional (${filas} elementos) se copia de la etiqueta seleccionada.`
-    : 'Sin tabla nutricional. Para agregarla despues: cargala en la etiqueta y usá "Guardar etiqueta actual en el catalogo".';
+  $('pUnidad').value = 'gr';
+  $('pIngredientes').value = '';
+  $('pInfoExtra').value = '';
   $('pErr').textContent = '';
-  /* Con el producto ya elegido no se vuelve a pedir: queda en la lista (oculta)
-     para createProduct, y el titulo dice de que producto es la presentacion. */
-  $('pProductoField').hidden = !!nombre;
-  $('pTitulo').textContent = nombre ? `Nueva presentacion de ${nombre}` : 'Nuevo producto';
   completarDesdeGranel();
   claveAuto = true;                     // la clave se genera sola hasta que se escriba una
   sugerirClave();
   paintProdClave();
   $('prodModal').classList.add('show');
-  setTimeout(() => $('pClave').focus(), 30);
+  setTimeout(() => $('pCantidad').focus(), 30);   // la clave sale sola: lo primero es la cantidad
 }
 
-/* La lista de productos del alta: los mismos de la seccion Bolsas (los a
-   granel mas los nombres del catalogo, ver productosGranel en bolsas.js).
-   Si la etiqueta trae un nombre que no esta en la lista, se agrega igual para
-   no perderlo. */
-function fillProdProductos(actual) {
-  const sel = $('pProducto');
-  const lista = productosGranel();
-  if (actual && !lista.some((p) => normalizar(p) === normalizar(actual))) lista.unshift(actual);
-  sel.innerHTML = '';
-  sel.appendChild(new Option(lista.length ? '— elegí un producto —' : '— no hay productos: creá uno con Nuevo… —', ''));
-  lista.forEach((p) => sel.appendChild(new Option(p, p)));
-  sel.value = (actual && lista.find((p) => normalizar(p) === normalizar(actual))) || '';
-}
-
-/* Trae los ingredientes y la informacion adicional del producto elegido: del
-   producto a granel (seccion Bolsas) o, si no lo hay, de otra presentacion
-   del catalogo con el mismo nombre. Al abrir la ventana (`pisar` false) solo
-   completa lo vacio, para respetar lo que traia la etiqueta; al cambiar de
-   producto en la lista los reemplaza, para no mezclar los de dos productos. */
-function completarDesdeGranel(pisar = false) {
-  const nombre = $('pProducto').value;
-  const base = findBase(nombre)                                    // bolsas.js
-    || cloud.catalog.find((c) => normalizar(c.producto) === normalizar(nombre));
-  if (!base) return;
-  if (pisar || !$('pIngredientes').value.trim()) $('pIngredientes').value = base.ingredientes || '';
-  if (pisar || !$('pInfoExtra').value.trim()) $('pInfoExtra').value = base.infoExtra || '';
+/* Trae los ingredientes y la informacion adicional del producto: del producto
+   a granel (seccion Bolsas) o, si no lo hay, de otra presentacion del mismo
+   producto. La tabla nutricional (que es por porcion, igual en todas las
+   presentaciones) se copia de otra presentacion, si la hay. */
+function completarDesdeGranel() {
+  const hermana = cloud.catalog.find((c) => normalizar(c.producto) === normalizar(prodNombre));
+  const base = findBase(prodNombre) || hermana;                  // findBase: bolsas.js
+  if (base) {
+    $('pIngredientes').value = base.ingredientes || '';
+    $('pInfoExtra').value = base.infoExtra || '';
+  }
+  prodNutri = hermana && nutriVisible({ nutri: hermana.nutri }) ? cloneNutri(hermana.nutri) : null;
+  const filas = prodNutri ? nutriRows(prodNutri).length : 0;
+  $('pNutri').textContent = filas
+    ? `La tabla nutricional (${filas} elementos) se copia de la presentacion ${presentacion(hermana)}.`
+    : 'Sin tabla nutricional. Para agregarla despues: cargala en la etiqueta y usá "Guardar etiqueta actual en el catalogo".';
 }
 
 const closeProdModal = () => $('prodModal').classList.remove('show');
@@ -752,18 +737,16 @@ async function createProduct() {
     $('pErr').textContent = r.msg || `Cargá la clave de ${CLAVE_LEN} caracteres.`;
     return $('pClave').focus();
   }
-  const producto = $('pProducto').value.trim();
+  const producto = prodNombre;
   const cantidad = $('pCantidad').value.trim();
-  if (!producto || !cantidad) { $('pErr').textContent = 'Cargá el producto y la cantidad.'; return; }
+  if (!producto || !cantidad) { $('pErr').textContent = 'Cargá la cantidad.'; return; }
 
-  const l = currentLabel();
   const entry = {
     codigo: r.codigo, clave, tipo: 'CODE128',
     producto, cantidad, unidad: $('pUnidad').value,
     ingredientes: $('pIngredientes').value, infoExtra: $('pInfoExtra').value.trim(),
-    nutri: cloneNutri(nutriVisible(l) ? l.nutri : null)
-  };
-  const ok = await cloudTask('Creando producto…', async () => {
+    nutri: cloneNutri(prodNutri)
+  };  const ok = await cloudTask('Creando producto…', async () => {
     // Otra persona pudo haber creado la misma clave desde que se cargo el catalogo.
     const { rows } = await gReadTab('Catalogo');
     const otro = rows.find((x) => String(x.codigo).trim() === entry.codigo);
@@ -1296,10 +1279,6 @@ function bindCloudEvents() {
   $('catVarNueva').addEventListener('click', () => openProdModal(prodElegido));
 
   /* --- nuevo producto --- */
-  $('btnProdNew').addEventListener('click', () => openProdModal());
-  $('pProducto').addEventListener('change', () => { completarDesdeGranel(true); sugerirClave(); });
-  // Producto a granel que todavia no existe: se crea encima de esta ventana.
-  $('pProdBase').addEventListener('click', () => openBaseModal('presentacion'));
   // La clave se regenera con el producto y la cantidad mientras no se escriba a mano.
   $('pCantidad').addEventListener('input', sugerirClave);
   $('pUnidad').addEventListener('change', sugerirClave);

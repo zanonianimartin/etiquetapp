@@ -113,15 +113,11 @@ function productosGranel() {
 /* ---------------- Producto a granel ---------------- */
 
 /* Ventana "Nuevo producto" de Bolsas: nombre, ingredientes e informacion
-   adicional. La cantidad, la clave y el codigo de barras son de cada
-   presentacion y se cargan en Etiquetas (Nuevo producto del catalogo). */
-/* Para quien se abrio: 'bolsa' (formulario de Bolsas) o 'presentacion' (alta
-   de producto de Etiquetas). Ahi queda elegido el producto nuevo. */
-let baseDestino = 'bolsa';
-
-function openBaseModal(destino = 'bolsa') {
+   adicional. Es el unico lugar donde se crean productos. La cantidad, la clave
+   y el codigo de barras son de cada presentacion y se cargan en Etiquetas
+   (buscar el producto -> Nueva presentacion…). */
+function openBaseModal() {
   if (!requireCloud()) return;
-  baseDestino = destino;
   $('baNombre').value = '';
   $('baIngr').value = '';
   $('baInfo').value = '';
@@ -145,15 +141,8 @@ async function guardarBase() {
   if (!ok) return;
   cloud.productos.push(base);
   closeBaseModal();
-  if (baseDestino === 'presentacion') {
-    // Queda elegido en el alta de producto, con sus ingredientes e info.
-    fillProdProductos(nombre);
-    completarDesdeGranel(true);
-    sugerirClave();
-  } else {
-    fillBolsaProductos(nombre);          // queda elegido en la bolsa
-    $('bProducto').closest('.field').classList.remove('missing');
-  }
+  fillBolsaProductos(nombre);            // queda elegido en la bolsa
+  $('bProducto').closest('.field').classList.remove('missing');
   toast(`Producto "${nombre}" guardado`);
 }
 
@@ -685,7 +674,7 @@ function bindBolsasEvents() {
   $('loteBolsasTodas').addEventListener('change', renderLoteBolsas);
 
   // Producto a granel que todavia no existe: nombre, ingredientes e info.
-  $('bProdNuevo').addEventListener('click', () => openBaseModal('bolsa'));
+  $('bProdNuevo').addEventListener('click', openBaseModal);
   $('baOk').addEventListener('click', guardarBase);
   $('baCancelar').addEventListener('click', closeBaseModal);
   $('baseModal').addEventListener('click', (e) => { if (e.target === $('baseModal')) closeBaseModal(); });
