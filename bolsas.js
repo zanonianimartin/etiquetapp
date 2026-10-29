@@ -85,7 +85,7 @@ const pesos = (n) => '$ ' + Number(n).toLocaleString('es-UY', { minimumFractionD
 /* ---------------- Menu de secciones ---------------- */
 
 function setSeccion(s) {
-  const seccion = s === 'bolsas' ? 'bolsas' : 'etiquetas';
+  const seccion = ['bolsas', 'lotes'].includes(s) ? s : 'etiquetas';
   document.body.dataset.seccion = seccion;
   document.querySelectorAll('#secciones [data-seccion]').forEach((b) => {
     b.classList.toggle('on', b.dataset.seccion === seccion);
@@ -93,6 +93,7 @@ function setSeccion(s) {
   });
   try { localStorage.setItem(SECCION_KEY, seccion); } catch { /* se arranca en Etiquetas */ }
   if (seccion === 'bolsas') refreshBolsasUI();
+  if (seccion === 'lotes') renderLotesList();     // lotes.js
 }
 
 /* ---------------- Productos ---------------- */
@@ -680,12 +681,14 @@ function refreshBolsasUI() {
   }
   renderBolsasList();
   renderLoteBolsas();
+  renderLotesList();                   // lotes.js: la seccion Lotes
 }
 
 function bindBolsasEvents() {
   document.querySelectorAll('#secciones [data-seccion]').forEach((b) => {
     b.addEventListener('click', () => setSeccion(b.dataset.seccion));
   });
+  bindLotesEvents();                   // lotes.js
   let inicial = 'etiquetas';
   try { inicial = localStorage.getItem(SECCION_KEY) || 'etiquetas'; } catch { /* idem */ }
   setSeccion(inicial);

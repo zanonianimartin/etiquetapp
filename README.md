@@ -413,6 +413,13 @@ lo que la imagen necesita, sin márgenes muertos, y nunca se sale de la etiqueta
 Valida largo y dígito verificador, y cuando está mal indica cuál debería ser. Si se cargan
 12 dígitos en un EAN-13, el dígito verificador se calcula solo.
 
+**Sección Lotes.** Lista de todos los lotes registrados, el más nuevo primero: fecha (la del
+nombre del lote, L-DDMMAA-clave), producto y presentación, cantidad de paquetes, vencimiento,
+bolsas usadas, imagen y quién lo registró. Se busca por lote, producto, código o bolsa y se
+filtra por período (7, 30 o 90 días); arriba se suman los lotes y paquetes de lo que se ve.
+Tocar una bolsa la abre en **Bolsas**; tocar la imagen la abre en tamaño real. Es solo para
+consultar: los lotes se registran y se corrigen en *Etiquetas → Registro de lotes*.
+
 **Salida.** *Imprimir* abre el diálogo de impresión del navegador. *Exportar PDF* abre el
 mismo diálogo: hay que elegir **Guardar como PDF** como destino. En ambos casos conviene
 dejar los márgenes en *Ninguno* y la escala en 100 % si el navegador los ofrece.
@@ -427,6 +434,7 @@ config.js                    ID de cliente de Google y planilla por defecto
 google.js                    login de Google y acceso a las APIs de Sheets y Drive
 cloud.js                     catálogo y lotes contra la planilla
 bolsas.js                    sección Bolsas (granel) y bolsas usadas en cada lote
+lotes.js                     sección Lotes: consulta de los lotes registrados
 browser-api.js               archivos, impresión y configuración local del navegador
 apps-script/usuarios.gs      script de la planilla: permisos según la pestaña Usuarios
 assets/logo-xilo.png         logo por defecto (Xilo)

@@ -717,6 +717,22 @@ body.paso-bolsa .solo-sin-bolsa{display:none}
   body[data-seccion="bolsas"] .layout,
   body[data-seccion="bolsas"] .mtabs{display:none !important}
   body[data-seccion="bolsas"] .bolsas-view{display:grid}
+  body[data-seccion="lotes"] .layout,
+  body[data-seccion="lotes"] .mtabs{display:none !important}
+  body[data-seccion="lotes"] .lotes-view{display:block}
+}
+
+/* Seccion Lotes: una sola lista, con las tarjetas de Bolsas. */
+.lotes-view{display:none; flex:1 1 auto; min-height:0; overflow-y:auto}
+.lotes-view > .panel > .group{max-width:900px}
+.lote-card{cursor:default}
+.lote-card:hover{border-color:var(--line)}
+.lote-card .bolsa-thumb img{cursor:zoom-in}
+.lote-fecha{font-size:11px; color:var(--muted)}
+.lote-resumen{margin:0 0 8px}
+.bolsa-lotes .link{
+  font:inherit; color:inherit; background:none; border:0; padding:0;
+  text-decoration:underline; cursor:pointer;
 }
 
 .bolsa-list{display:grid; gap:8px}
@@ -861,6 +877,7 @@ body.cloud-on .gate{display:none}
   .bolsas-view > .panel{overflow:visible; min-height:auto}
   .bolsas-form{border-right:0; border-bottom:1px solid var(--line)}
   .bolsas-view > .panel > .group{max-width:560px; margin-left:auto; margin-right:auto}
+  .lotes-view > .panel > .group{max-width:560px; margin-left:auto; margin-right:auto}
 }
 
 @media screen and (max-width: 600px){

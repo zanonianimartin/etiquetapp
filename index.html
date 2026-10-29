@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" data-version="20261028-2146">
+<html lang="es" data-version="20261028-2201">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/ https://sheets.googleapis.com https://www.googleapis.com https://oauth2.googleapis.com">
 <title>EtiquetApp - Generador de etiquetas A4</title>
 <link rel="icon" href="assets/logo-xilo.png">
-<link rel="stylesheet" href="styles.css?v=20261028-2146">
+<link rel="stylesheet" href="styles.css?v=20261028-2201">
 </head>
 <body data-tab="datos">
 
@@ -40,6 +40,7 @@
   <nav class="secciones" id="secciones" aria-label="Secciones">
     <button data-seccion="etiquetas" class="on" aria-pressed="true">Etiquetas</button>
     <button data-seccion="bolsas" aria-pressed="false">Bolsas</button>
+    <button data-seccion="lotes" aria-pressed="false">Lotes</button>
   </nav>
   <div class="topbar-actions">
     <button id="btnGoogle" class="btn ghost google">Conectar con Google</button>
@@ -459,6 +460,36 @@
   </section>
 </div>
 
+<!-- ============ SECCION LOTES (lotes.js) ============ -->
+<div class="lotes-view no-print" id="lotesView">
+  <section class="panel">
+    <section class="group">
+      <h3>Lotes <span id="lCount" class="badge">—</span></h3>
+      <p class="hint cloud-msg">Conectate con Google para ver los lotes registrados.</p>
+      <div class="row2">
+        <label class="field">
+          <span>Buscar</span>
+          <input type="text" id="lBuscar" placeholder="Lote, producto, bolsa…" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>Periodo</span>
+          <select id="lPeriodo">
+            <option value="0">Todos</option>
+            <option value="7">Ultimos 7 dias</option>
+            <option value="30">Ultimos 30 dias</option>
+            <option value="90">Ultimos 90 dias</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint lote-resumen" id="lResumen"></p>
+      <div id="lList" class="bolsa-list"></div>
+      <p class="hint">Los lotes se registran en <b>Etiquetas</b> (Registro de lotes), con la
+        cantidad de paquetes, las bolsas usadas y la imagen. Tocá una bolsa para verla en
+        <b>Bolsas</b>, o la imagen para abrirla en tamano real.</p>
+    </section>
+  </section>
+</div>
+
 <!-- Modal de la planilla de Google. Va antes que el de texto: al crear una
      planilla se pide el nombre encima de este. -->
 <div id="gModal" class="modal-bg no-print">
@@ -699,12 +730,13 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="config.js?v=20261028-2146"></script>
-<script src="vendor/JsBarcode.all.min.js?v=20261028-2146"></script>
-<script src="google.js?v=20261028-2146"></script>
-<script src="browser-api.js?v=20261028-2146"></script>
-<script src="cloud.js?v=20261028-2146"></script>
-<script src="bolsas.js?v=20261028-2146"></script>
-<script src="app.js?v=20261028-2146"></script>
+<script src="config.js?v=20261028-2201"></script>
+<script src="vendor/JsBarcode.all.min.js?v=20261028-2201"></script>
+<script src="google.js?v=20261028-2201"></script>
+<script src="browser-api.js?v=20261028-2201"></script>
+<script src="cloud.js?v=20261028-2201"></script>
+<script src="bolsas.js?v=20261028-2201"></script>
+<script src="lotes.js?v=20261028-2201"></script>
+<script src="app.js?v=20261028-2201"></script>
 </body>
 </html>
